@@ -6,16 +6,18 @@ import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.GameRenderer
 import net.minecraft.client.renderer.RenderType
+import net.minecraft.util.Mth
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.phys.Vec3
 import net.minecraftforge.client.event.InputEvent
 import net.minecraftforge.client.event.RenderGuiOverlayEvent
 import net.minecraftforge.client.event.RenderLevelStageEvent
-import net.minecraftforge.client.event.ViewportEvent.ComputeCameraAngles
+import net.minecraftforge.client.event.ViewportEvent
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay
 import net.minecraftforge.eventbus.api.SubscribeEvent
-import ru.hollowhorizon.hc.client.utils.math.Spline3D
 import ru.hollowhorizon.hc.client.utils.colored
 import ru.hollowhorizon.hc.client.utils.math.Interpolation
+import ru.hollowhorizon.hc.client.utils.math.Spline3D
 import ru.hollowhorizon.hc.client.utils.mc
 import ru.hollowhorizon.hc.client.utils.mcText
 import ru.hollowhorizon.hc.client.utils.nbt.ForVector3d
@@ -36,6 +38,7 @@ object CameraHandler {
     private var yRot = 0f
     private var yRotO = 0f
     private var zRot = 0f
+    private var fov = 70.0
     private val points = ArrayList<Point>()
     private lateinit var spline: Spline3D
 
@@ -57,8 +60,8 @@ object CameraHandler {
             RenderSystem.lineWidth(10f)
             source.getBuffer(RenderType.LINES).apply {
                 var lastPoint = spline.getPoint(0.0)
-                for (i in 0..10*points.size) {
-                    val point = spline.getPoint(i / (10.0*points.size))
+                for (i in 0..10 * points.size) {
+                    val point = spline.getPoint(i / (10.0 * points.size))
 
                     vertex(matrix, lastPoint.x.toFloat(), lastPoint.y.toFloat(), lastPoint.z.toFloat())
                     color(0.16f, 0.83f, 0f, 0.6f)
@@ -86,14 +89,33 @@ object CameraHandler {
     fun onRenderOverlay(event: RenderGuiOverlayEvent.Pre) {
         val player = mc.player ?: return
         if (player.mainHandItem.item != ModItems.CAMERA.get()) return
-        if(event.overlay != VanillaGuiOverlay.HOTBAR.type()) return
+        if (event.overlay != VanillaGuiOverlay.HOTBAR.type()) return
         xRot += player.xRot - xRotO
         yRot += player.yHeadRot - yRotO
         Minecraft.getInstance().font.apply {
-            drawShadow(event.poseStack, "rotation ".mcText + "x".mcText.colored(0xf23d30) + ": $xRot".mcText, 5f, 5f, 0xFFFFFF)
-            drawShadow(event.poseStack, "rotation ".mcText + "y".mcText.colored(0x52f26d) + ": $yRot".mcText, 5f, 14f, 0xFFFFFF)
-            drawShadow(event.poseStack, "rotation ".mcText + "z".mcText.colored(0x5285f2) + ": $zRot".mcText, 5f, 23f, 0xFFFFFF)
-            drawShadow(event.poseStack, "point count: ${points.size}", 5f, 32f, 0xFFFFFF)
+            drawShadow(
+                event.poseStack,
+                "rotation ".mcText + "x".mcText.colored(0xf23d30) + ": $xRot".mcText,
+                5f,
+                5f,
+                0xFFFFFF
+            )
+            drawShadow(
+                event.poseStack,
+                "rotation ".mcText + "y".mcText.colored(0x52f26d) + ": $yRot".mcText,
+                5f,
+                14f,
+                0xFFFFFF
+            )
+            drawShadow(
+                event.poseStack,
+                "rotation ".mcText + "z".mcText.colored(0x5285f2) + ": $zRot".mcText,
+                5f,
+                23f,
+                0xFFFFFF
+            )
+            drawShadow(event.poseStack, "fov: $fov", 5f, 32f, 0xFFFFFF)
+            drawShadow(event.poseStack, "point count: ${points.size}", 5f, 41f, 0xFFFFFF)
         }
 
         xRotO = player.xRot
@@ -132,22 +154,37 @@ object CameraHandler {
     fun onKeyPressed(event: InputEvent.Key) {
         if (mc.player?.mainHandItem?.item != ModItems.CAMERA.get()) return
         if (mc.screen != null) return
-        if(event.action == 0) return
+        if (event.action == 0) return
 
         val key = Keybind.fromCode(event.key)
         when (key) {
             Keybind.MINUS -> zRot--
             Keybind.EQUAL -> zRot++
-            Keybind.C -> zRot = 0f
+            Keybind.LEFT_BRACKET -> {
+                if (fov <= 1) fov -= 0.1
+                else fov--
+            }
+            Keybind.RIGHT_BRACKET -> fov++
+            Keybind.C -> {
+                zRot = 0f
+                fov = 70.0
+            }
             else -> {}
         }
     }
 
     @SubscribeEvent
-    fun onComputeAngles(event: ComputeCameraAngles) {
+    fun onComputeAngles(event: ViewportEvent.ComputeCameraAngles) {
         val player = mc.player ?: return
         if (player.mainHandItem.item != ModItems.CAMERA.get()) return
         event.roll = zRot
+    }
+
+    @SubscribeEvent
+    fun onComputeFov(event: ViewportEvent.ComputeFov) {
+        val player = mc.player ?: return
+        if (player.mainHandItem.item != ModItems.CAMERA.get()) return
+        event.fov = fov
     }
 
     fun addPoint() {
@@ -156,7 +193,7 @@ object CameraHandler {
         val y = player.y + player.eyeHeight
         val z = player.z
 
-        points += Point(x, y, z, xRot, yRot, zRot)
+        points += Point(x, y, z, xRot, yRot, zRot, fov)
 
         if (points.size > 1) {
             spline = Spline3D(
@@ -194,7 +231,8 @@ class CameraPath(
 
 @HollowPacketV2(HollowPacketV2.Direction.TO_SERVER)
 @Serializable
-class SaveOnServerPacket(private val path: CameraPath, private val fileName: String) : HollowPacketV3<SaveOnServerPacket> {
+class SaveOnServerPacket(private val path: CameraPath, private val fileName: String) :
+    HollowPacketV3<SaveOnServerPacket> {
     override fun handle(player: Player, data: SaveOnServerPacket) {
         if (player.mainHandItem.item == ModItems.CAMERA.get()) {
             val file = DirectoryManager.HOLLOW_ENGINE.resolve("camera/$fileName.nbt")

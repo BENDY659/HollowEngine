@@ -55,7 +55,7 @@ class SaveCameraPathScreen(val path: CameraPath) : HollowScreen() {
                 +BaseButton(
                     0, 0, 43.pc.w().value, 20,
                     "hollowengine.save".mcTranslate,
-                    { SaveOnServerPacket(path, field.value).send(); onClose() },
+                    { SaveOnServerPacket(path, field.value).send(); this@SaveCameraPathScreen.onClose() },
                     "hollowengine:textures/gui/long_button.png".rl
                 )
                 +BaseButton(

@@ -20,8 +20,12 @@ import ru.hollowhorizon.hc.HollowCore
 import ru.hollowhorizon.hc.api.utils.Polymorphic
 import ru.hollowhorizon.hc.client.handlers.TickHandler
 import ru.hollowhorizon.hc.client.utils.math.Interpolation
+import ru.hollowhorizon.hc.client.utils.math.Spline
 import ru.hollowhorizon.hc.client.utils.math.Spline3D
+import ru.hollowhorizon.hc.client.utils.mc
+import ru.hollowhorizon.hollowengine.client.camera.CameraHandler
 import ru.hollowhorizon.hollowengine.client.camera.CameraPath
+import ru.hollowhorizon.hollowengine.common.registry.ModItems
 import ru.hollowhorizon.hollowengine.common.scripting.forEachPlayer
 import ru.hollowhorizon.hollowengine.mixins.CameraInvoker
 
@@ -41,6 +45,7 @@ class CurveCameraPath(
 
     @Transient
     var spline = Spline3D(path.positions, path.rotations)
+
 
     override fun reset() {
         startTime = TickHandler.currentTicks()
@@ -98,7 +103,23 @@ class CurveCameraPath(
         event.yaw = rotation.y()
         event.pitch = rotation.x()
         event.roll = rotation.z()
+    }
 
+    @SubscribeEvent
+    fun onComputeFov(event: ViewportEvent.ComputeFov) {
+        val time = TickHandler.currentTicks() - startTime + Minecraft.getInstance().partialTick
+        val factor = (time / maxTime).coerceIn(0f, 1f)
+
+        val interpolated = interpolation(factor).toDouble()
+        val point = spline.getPoint(interpolated)
+
+        val rotations = path.points
+
+        val index = ((rotations.size - 1) * factor).toInt()
+        val current = rotations[index].fov
+        val next = if(index == rotations.size - 1) current else rotations[index + 1].fov
+
+        event.fov = Mth.lerp(((rotations.size - 1) * factor) % 1.0, current, next)
     }
 
     @SubscribeEvent

@@ -9,9 +9,10 @@ import kotlinx.serialization.Serializable
 class Point(
     val x: Double, val y: Double, val z: Double,
     val xRot: Float, val yRot: Float, val zRot: Float,
+    var fov: Double = 70.0
 ) {
     val pos get() = Vector3d(x, y, z)
     val rot get() = Vector3f(xRot, yRot, zRot)
 
-    fun toLocal(startPos: Vector3d) = Point(x - startPos.x, y - startPos.y, z - startPos.z, xRot, yRot, zRot)
+    fun toLocal(startPos: Vector3d) = Point(x - startPos.x, y - startPos.y, z - startPos.z, xRot, yRot, zRot, fov)
 }
