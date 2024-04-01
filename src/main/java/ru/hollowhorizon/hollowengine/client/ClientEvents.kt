@@ -19,6 +19,7 @@ import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hc.client.utils.open
 import ru.hollowhorizon.hollowengine.HollowEngine
+import ru.hollowhorizon.hollowengine.client.gui.ExampleGui
 import ru.hollowhorizon.hollowengine.client.render.PlayerRenderer
 import ru.hollowhorizon.hollowengine.client.screen.ProgressManagerScreen
 import ru.hollowhorizon.hollowengine.client.screen.overlays.MouseOverlay
@@ -84,6 +85,11 @@ object ClientEvents {
             event.key,
             event.scanCode
         )
+
+//        if (event.key == GLFW.GLFW_KEY_M) {
+//            Minecraft.getInstance().setScreen(ExampleGui())
+//        }
+
         if (Minecraft.getInstance().screen != null) return
 
         if (OPEN_EVENT_LIST.isActiveAndMatches(key)) {
