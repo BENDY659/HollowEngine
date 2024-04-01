@@ -90,10 +90,9 @@ configure<UserDevExtension> {
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-    maven { url = uri("https://thedarkcolour.github.io/KotlinForForge/") }
-    maven { url = uri("https://cursemaven.com") }
-    maven { url = uri("https://maven.firstdarkdev.xyz/snapshots") }
+    maven("https://jitpack.io")
+    maven("https://thedarkcolour.github.io/KotlinForForge/")
+    maven("https://cursemaven.com")
     flatDir {
         dir("hc")
         dir("libs")
@@ -101,8 +100,8 @@ repositories {
 }
 
 configure<MixinExtension> {
-    add(sourceSets.main.get(), "hollowengine.refmap.json")
     config("hollowengine.mixins.json")
+    add(sourceSets.main.get(), "hollowengine.refmap.json")
 }
 
 dependencies {
