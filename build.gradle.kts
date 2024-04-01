@@ -106,7 +106,6 @@ configure<MixinExtension> {
 
 dependencies {
     minecraft("net.minecraftforge:forge:${mcVersion}-${forgeVersion}")
-    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 
     implementation(kotlin("script-runtime"))
     implementation(kotlin("scripting-jvm-host"))
@@ -126,6 +125,8 @@ dependencies {
     implementation(fg.deobf("curse.maven:spark-361579:4505309"))
     implementation(fg.deobf("curse.maven:item-filters-309674:4553326"))
     compileOnly(fg.deobf("curse.maven:ftb-quests-forge-289412:5060506"))
+
+    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 }
 
 fun Jar.createManifest() = manifest {

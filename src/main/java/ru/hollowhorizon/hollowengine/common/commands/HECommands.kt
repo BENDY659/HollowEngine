@@ -84,7 +84,7 @@ object HECommands {
     }
 }
 
-private fun listModels(): Collection<String> {
+fun listModels(): Collection<String> {
     val list = mutableListOf<String>()
     list += "hollowengine:models/entity/player_model.gltf"
     list += "hollowengine:models/entity/player_model_slim.gltf"
