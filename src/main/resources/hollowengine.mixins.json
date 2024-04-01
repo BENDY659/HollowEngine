@@ -13,7 +13,8 @@
     "RecipeManagerAccessor"
   ],
   "client": [
-    "CameraInvoker"
+    "CameraInvoker",
+    "PauseScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
