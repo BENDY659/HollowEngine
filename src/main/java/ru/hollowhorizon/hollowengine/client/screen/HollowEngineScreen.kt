@@ -49,11 +49,11 @@ object HollowEngineScreen : HollowScreen() {
 
 
         font.drawScaled(
-            pPoseStack, Anchor.CENTER, "C первым апреля!".mcText, width / 2, height / 2,
+            pPoseStack, Anchor.CENTER, "C вторым апреля!".mcText, width / 2, height / 2,
             0xFFFFFF or (alpha shl 24), 4f, shadow = true
         )
         font.drawScaled(
-            pPoseStack, Anchor.CENTER, "Обновлений больше не будет...".mcText, width / 2, height / 2 + 20,
+            pPoseStack, Anchor.CENTER, "Обновления будут...".mcText, width / 2, height / 2 + 20,
             0xFFFFFF or (alpha shl 24), 1f, shadow = true
         )
 

@@ -20,6 +20,7 @@ public class PauseScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void onInit(CallbackInfo ci) {
+        if(true) return; // Пока отключено, в будущем будет конфиг
         addRenderableWidget(new ScaleableButton(5, 5, 20, 20, "hollowengine:textures/gui/hollowengine.png", "HollowEngine: Visual Scripting", button -> {
             Minecraft.getInstance().setScreen(HollowEngineScreen.INSTANCE);
             return Unit.INSTANCE;

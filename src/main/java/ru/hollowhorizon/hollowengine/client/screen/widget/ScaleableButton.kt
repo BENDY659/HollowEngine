@@ -45,7 +45,7 @@ class ScaleableButton(
         val tY = (scale * height - height) / 4.0
         stack.translate(-tX, -tY, 70.0)
 
-        fill(stack, 0, 0, width, height, 0x80_000000.toInt())
+        if(!isHovered) RenderSystem.setShaderColor(0.6f, 0.5f, 0.5f, 0.8f)
         RenderSystem.setShaderTexture(0, image.rl)
         blit(stack, 0, 0, 0f, 0f, width, height, width, height)
 
