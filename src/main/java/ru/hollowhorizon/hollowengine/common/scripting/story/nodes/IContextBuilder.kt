@@ -658,6 +658,10 @@ abstract class IContextBuilder {
             stateMachine.asyncNodeIds.add(this@resume.index)
         }
     }
+    
+    fun AsyncProperty.join() = await {
+        stateMachine.asyncNodeIds.contains(this.index)
+    }
 
 
     infix fun Team.tpPos(pos: () -> Vec3) = +SimpleNode {

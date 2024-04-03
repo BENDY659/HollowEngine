@@ -31,7 +31,7 @@ fun IContextBuilder.wait(time: () -> Int) = +WaitNode(time)
 
 fun IContextBuilder.await(condition: () -> Boolean) = +object : Node() {
     override fun tick(): Boolean {
-        return !condition()
+        return condition()
     }
 
     override fun serializeNBT() = CompoundTag()
