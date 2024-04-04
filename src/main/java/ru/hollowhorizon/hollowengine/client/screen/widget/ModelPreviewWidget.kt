@@ -364,7 +364,7 @@ class ModelPreviewWidget(
 
         if (renderFloor) {
             Lighting.setupForFlatItems()
-            renderStack.pushPose();
+            renderStack.pushPose()
             renderStack.translate(-0.5, -1.0, -0.5)
             MC.blockRenderer
                 .renderSingleBlock(

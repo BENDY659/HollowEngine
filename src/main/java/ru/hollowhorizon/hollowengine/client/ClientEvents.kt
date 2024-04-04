@@ -11,15 +11,12 @@ import net.minecraftforge.client.event.RenderGuiOverlayEvent
 import net.minecraftforge.client.event.RenderPlayerEvent
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay
 import net.minecraftforge.event.entity.player.ItemTooltipEvent
-import net.minecraftforge.fml.ModList
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo
 import org.lwjgl.glfw.GLFW
 import ru.hollowhorizon.hc.client.models.gltf.manager.AnimatedEntityCapability
 import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hc.client.utils.open
 import ru.hollowhorizon.hollowengine.HollowEngine
-import ru.hollowhorizon.hollowengine.client.gui.ExampleGui
 import ru.hollowhorizon.hollowengine.client.render.PlayerRenderer
 import ru.hollowhorizon.hollowengine.client.screen.ProgressManagerScreen
 import ru.hollowhorizon.hollowengine.client.screen.overlays.MouseOverlay

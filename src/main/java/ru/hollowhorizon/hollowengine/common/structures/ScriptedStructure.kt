@@ -156,7 +156,7 @@ class ScriptedStructure(settings: StructureSettings, val location: ResourceLocat
                         ResourceLocation.CODEC.fieldOf("location").forGetter(ScriptedStructure::location)
                     )
                     .apply(builder, ::ScriptedStructure)
-            };
+            }
     }
 
     class Piece : TemplateStructurePiece {

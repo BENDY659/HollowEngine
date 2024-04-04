@@ -54,7 +54,7 @@ object KotlinSyntax : SyntaxHighlighter() {
             )
         )
         special.addAll(arrayOf("this", "it"))
-        typeKeywords.addAll(arrayOf("true", "false", "null", "undefined", "enum"));
-        functionName = Pattern.compile("[\\w_][\\d\\w_]*", Pattern.CASE_INSENSITIVE);
+        typeKeywords.addAll(arrayOf("true", "false", "null", "undefined", "enum"))
+        functionName = Pattern.compile("[\\w_][\\d\\w_]*", Pattern.CASE_INSENSITIVE)
     }
 }
