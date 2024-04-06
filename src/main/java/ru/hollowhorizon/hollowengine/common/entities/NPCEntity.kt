@@ -53,8 +53,6 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
     val npcTarget = NpcTarget(level)
     private var tradePlayer: Player? = null
     var npcOffers = MerchantOffers()
-    private var loadedChunk: ChunkPos = chunkPosition()
-    private var loadedChunkO: ChunkPos = loadedChunk
 
     init {
         setCanPickUpLoot(true)
@@ -157,18 +155,6 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
     override fun tick() {
         super.tick()
         npcTarget.tick(this)
-
-        val level = level as? ServerLevel ?: return
-
-        loadedChunk = chunkPosition()
-
-        if(loadedChunk != loadedChunkO) {
-            level.setChunkForced(loadedChunk.x, loadedChunk.z, true)
-
-            if(!level.entities.all.filterIsInstance<NPCEntity>().any { it.chunkPosition() == loadedChunkO }) level.setChunkForced(loadedChunkO.x, loadedChunkO.z, false)
-        }
-
-        loadedChunkO = loadedChunk
     }
 
     override fun remove(pReason: RemovalReason) {
@@ -176,8 +162,6 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
 
         val level = level as? ServerLevel ?: return
         val entities = level.entities.all.filterIsInstance<NPCEntity>()
-        if(!entities.any { it.chunkPosition() == loadedChunkO }) level.setChunkForced(loadedChunkO.x, loadedChunkO.z, false)
-        if(!entities.any { it.chunkPosition() == loadedChunk }) level.setChunkForced(loadedChunk.x, loadedChunk.z, false)
     }
 
     override fun doPush(pEntity: Entity) {
@@ -226,10 +210,6 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
         super.save(pCompound)
         pCompound.putFloat("sizeX", entityData[sizeX])
         pCompound.putFloat("sizeY", entityData[sizeY])
-        pCompound.putInt("loadedChunkX", loadedChunk.x)
-        pCompound.putInt("loadedChunkZ", loadedChunk.z)
-        pCompound.putInt("loadedChunkXO", loadedChunkO.x)
-        pCompound.putInt("loadedChunkZO", loadedChunkO.z)
         return true
     }
 
@@ -238,8 +218,6 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
 
         entityData[sizeX] = pCompound.getFloat("sizeX")
         entityData[sizeY] = pCompound.getFloat("sizeY")
-        loadedChunk = ChunkPos(pCompound.getInt("loadedChunkX"), pCompound.getInt("loadedChunkZ"))
-        loadedChunkO = ChunkPos(pCompound.getInt("loadedChunkXO"), pCompound.getInt("loadedChunkZO"))
     }
 
     companion object {

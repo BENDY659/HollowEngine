@@ -5,22 +5,23 @@ import ru.hollowhorizon.hollowengine.client.screen.overlays.DrawMousePacket
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 
-class NpcInteractNode(npcConsumer: NPCProperty) : Node() {
-    val npc by lazy { npcConsumer() }
+class NpcInteractNode(val npc: NPCProperty) : Node() {
     var hasInteracted = false
     var isStarted = false
 
     override fun tick(): Boolean {
+        if(!npc.isLoaded) return true
+
         if (!isStarted) {
             isStarted = true
             DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.team.onlineMembers.toTypedArray())
-            npc.onInteract = { player ->
+            npc()!!.onInteract = { player ->
                 hasInteracted = true
             }
         }
         if (hasInteracted) {
             DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
-            npc.onInteract = NPCEntity.EMPTY_INTERACT
+            npc()!!.onInteract = NPCEntity.EMPTY_INTERACT
         }
         return !hasInteracted
     }

@@ -14,11 +14,13 @@ import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.next
 
-class NpcLookToBlockNode(npcConsumer: NPCProperty, var pos: () -> Vec3, var speed: Vec2 = Vec2(10f, 30f)) : Node() {
-    val npc by lazy { npcConsumer() }
+class NpcLookToBlockNode(val npc: NPCProperty, var pos: () -> Vec3, var speed: Vec2 = Vec2(10f, 30f)) : Node() {
     private var ticks = 30
 
     override fun tick(): Boolean {
+        if(!npc.isLoaded) return true
+        val npc = npc()!!
+
         val look = npc.lookControl
 
         val newPos = pos()
@@ -43,12 +45,14 @@ class NpcLookToBlockNode(npcConsumer: NPCProperty, var pos: () -> Vec3, var spee
     }
 }
 
-class NpcLookToEntityNode(npcConsumer: NPCProperty, var target: () -> Entity?, var speed: Vec2 = Vec2(10f, 30f)) :
+class NpcLookToEntityNode(val npc: NPCProperty, var target: () -> Entity?, var speed: Vec2 = Vec2(10f, 30f)) :
     Node() {
-    val npc by lazy { npcConsumer() }
     private var ticks = 30
 
     override fun tick(): Boolean {
+        if(!npc.isLoaded) return true
+        val npc = npc()!!
+
         val look = npc.lookControl
 
         look.setLookAt(target() ?: return true, speed.x, speed.y)
@@ -62,11 +66,13 @@ class NpcLookToEntityNode(npcConsumer: NPCProperty, var target: () -> Entity?, v
     }
 }
 
-class NpcLookToTeamNode(npcConsumer: NPCProperty, var target: () -> Team?, var speed: Vec2 = Vec2(10f, 30f)) : Node() {
-    val npc by lazy { npcConsumer() }
+class NpcLookToTeamNode(val npc: NPCProperty, var target: () -> Team?, var speed: Vec2 = Vec2(10f, 30f)) : Node() {
     private var ticks = 30
 
     override fun tick(): Boolean {
+        if(!npc.isLoaded) return true
+        val npc = npc()!!
+
         val look = npc.lookControl
 
         val team = target()?.onlineMembers?.minByOrNull { it.distanceToSqr(npc) } ?: return true

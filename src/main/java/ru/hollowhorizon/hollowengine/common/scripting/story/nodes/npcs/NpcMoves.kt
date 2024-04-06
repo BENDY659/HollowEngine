@@ -2,25 +2,22 @@ package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs
 
 import dev.ftb.mods.ftbteams.FTBTeamsAPI
 import dev.ftb.mods.ftbteams.data.Team
-import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
-import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.phys.Vec3
 import ru.hollowhorizon.hc.HollowCore
 import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
-import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.next
-import ru.hollowhorizon.hollowengine.common.util.getStructure
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-open class NpcMoveToBlockNode(npcConsumer: NPCProperty, var pos: () -> Vec3) : Node() {
-    val npc by lazy { npcConsumer() }
+open class NpcMoveToBlockNode(val npc: NPCProperty, var pos: () -> Vec3) : Node() {
     val block by lazy { pos() }
 
     override fun tick(): Boolean {
+        if (!npc.isLoaded) return true
+        val npc = npc()!!
+
         val navigator = npc.navigation
 
         navigator.moveTo(navigator.createPath(block.x, block.y, block.z, 0), 1.0)
@@ -43,10 +40,11 @@ open class NpcMoveToBlockNode(npcConsumer: NPCProperty, var pos: () -> Vec3) : N
     }
 }
 
-class NpcMoveToEntityNode(npcConsumer: NPCProperty, var target: () -> Entity?) : Node() {
-    val npc by lazy { npcConsumer() }
+class NpcMoveToEntityNode(val npc: NPCProperty, var target: () -> Entity?) : Node() {
 
     override fun tick(): Boolean {
+        if (!npc.isLoaded) return true
+        val npc = npc()!!
         val navigator = npc.navigation
         val entity = target()
         navigator.moveTo(entity ?: return true, 1.0)
@@ -73,10 +71,11 @@ class NpcMoveToEntityNode(npcConsumer: NPCProperty, var target: () -> Entity?) :
     }
 }
 
-class NpcMoveToTeamNode(npcConsumer: NPCProperty, var target: () -> Team?) : Node() {
-    val npc by lazy { npcConsumer() }
+class NpcMoveToTeamNode(val npc: NPCProperty, var target: () -> Team?) : Node() {
 
     override fun tick(): Boolean {
+        if (!npc.isLoaded) return true
+        val npc = npc()!!
         val navigator = npc.navigation
 
         val entity = target()?.onlineMembers?.minByOrNull { it.distanceToSqr(npc) } ?: return true

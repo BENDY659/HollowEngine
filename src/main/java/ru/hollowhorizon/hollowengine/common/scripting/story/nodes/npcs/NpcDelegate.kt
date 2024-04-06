@@ -10,7 +10,6 @@ import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 import ru.hollowhorizon.hollowengine.common.registry.ModEntities
-import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.util.NpcContainer
 import java.util.*
@@ -18,11 +17,28 @@ import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 class NpcDelegate(
-    val settings: () -> NpcContainer
+    settings: () -> NpcContainer,
 ) : Node(), ReadOnlyProperty<Any?, NPCProperty> {
+    val settings by lazy { settings() }
+    var entityUUID: UUID? = null
+    private val property = NPCProperty(npc = {
+        val world = this.settings.world.rl
+        val model = this.settings.model
+        check(ResourceLocation.isValidResourceLocation(model)) { "Invalid model path: $model" }
 
-    val npc: NPCEntity by lazy {
-        val settings = settings()
+        val dimension = manager.server.levelKeys().find { it.location() == world }
+            ?: throw IllegalStateException("Dimension $world not found. Or not loaded!")
+        val level = manager.server.getLevel(dimension)
+            ?: throw IllegalStateException("Dimension $world not found. Or not loaded")
+
+        level.getEntity(entityUUID ?: return@NPCProperty null) as NPCEntity
+    })
+
+    override fun getValue(thisRef: Any?, property: KProperty<*>): NPCProperty {
+        return this.property
+    }
+
+    override fun tick(): Boolean {
         check(ResourceLocation.isValidResourceLocation(settings.model)) { "Invalid model path: ${settings.model}" }
 
         val dimension = manager.server.levelKeys().find { it.location() == settings.world.rl }
@@ -30,22 +46,12 @@ class NpcDelegate(
         val level = manager.server.getLevel(dimension)
             ?: throw IllegalStateException("Dimension ${settings.world} not found. Or not loaded")
 
-        val entities = level.getEntities(ModEntities.NPC_ENTITY.get()) { entity: NPCEntity ->
-            return@getEntities entity[AnimatedEntityCapability::class].model == settings.model &&
-                    entity.displayName.string == settings.name &&
-                    UUID.fromString(entity[NPCCapability::class].teamUUID) == manager.team.id &&
-                    entity.isAlive
-        }
+        if(entityUUID != null) return false
 
-        var isNpcSpawned = true
-        val entity = entities.firstOrNull() ?: NPCEntity(level).apply {
-            isNpcSpawned = false
+        val entity = NPCEntity(level).apply {
             setPos(settings.pos.x, settings.pos.y, settings.pos.z)
             level.addFreshEntity(this)
-        }
-
-        if (!isNpcSpawned) {
-            entity[AnimatedEntityCapability::class].apply {
+            this[AnimatedEntityCapability::class].apply {
                 model = settings.model
                 animations.clear()
                 animations.putAll(settings.animations)
@@ -56,36 +62,31 @@ class NpcDelegate(
                 subModels.clear()
                 subModels.putAll(settings.subModels)
             }
-            entity[NPCCapability::class].teamUUID = manager.team.id.toString()
-            entity.moveTo(
-                settings.pos.x, settings.pos.y, settings.pos.z, settings.rotation.x, settings.rotation.y
-            )
+            this[NPCCapability::class].teamUUID = manager.team.id.toString()
+            moveTo(settings.pos.x, settings.pos.y, settings.pos.z, settings.rotation.x, settings.rotation.y)
 
             settings.attributes.attributes.forEach { (name, value) ->
-                entity.getAttribute(ForgeRegistries.ATTRIBUTES.getValue(name.rl) ?: return@forEach)?.baseValue =
+                getAttribute(ForgeRegistries.ATTRIBUTES.getValue(name.rl) ?: return@forEach)?.baseValue =
                     value.toDouble()
             }
 
-            entity.setDimensions(settings.size)
-            entity.refreshDimensions()
+            setDimensions(settings.size)
+            refreshDimensions()
 
-            entity.isCustomNameVisible = settings.showName && settings.name.isNotEmpty()
-            entity.customName = settings.name.mcText
+            isCustomNameVisible = settings.showName && settings.name.isNotEmpty()
+            customName = settings.name.mcText
         }
 
-        entity
+        entityUUID = entity.uuid
+
+        return !property.isLoaded
     }
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>): NPCProperty {
-        return NPCProperty { npc }
+    override fun serializeNBT() = CompoundTag().apply {
+        putUUID("entity", entityUUID ?: return@apply)
     }
 
-    override fun tick(): Boolean {
-        npc
-        return false
+    override fun deserializeNBT(nbt: CompoundTag) {
+        if(nbt.contains("entity")) entityUUID = nbt.getUUID("entity")
     }
-
-    override fun serializeNBT() = CompoundTag()
-
-    override fun deserializeNBT(nbt: CompoundTag) {}
 }

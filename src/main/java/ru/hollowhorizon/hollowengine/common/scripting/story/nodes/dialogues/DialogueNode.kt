@@ -72,22 +72,21 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
 
     override fun tick(): Boolean {
         if (!isStarted) {
-            isStarted = true
-            onStart()
+            if(onStart()) isStarted = true
+            return true
         }
 
         if (!currentNode.tick()) index++
 
         if (isEnded) {
-            onEnd()
-            return false
+            return onEnd()
         }
 
-        if (FORCE_CLOSE) {
+        if (FORCE_CLOSE && npc?.isLoaded == true) {
             FORCE_CLOSE = false
 
-            npc?.let {
-                val entity = it()
+            npc.let {
+                val entity = it()!!
                 entity[NPCCapability::class].icon = NpcIcon.EMPTY
                 DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
                 entity.onInteract = NPCEntity.EMPTY_INTERACT
@@ -97,10 +96,12 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
         return true
     }
 
-    private fun onStart() {
+    private fun onStart(): Boolean {
+        if(npc?.isLoaded == false) return false
+
         SERVER_OPTIONS = DialogueOptions()
         npc?.let {
-            val entity = it()
+            val entity = it()!!
             entity[NPCCapability::class].icon = NpcIcon.DIALOGUE
             DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.team.onlineMembers.toTypedArray())
             entity.onInteract = {
@@ -115,18 +116,23 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
                 DialogueScreenPacket(true, canClose = false).send(PacketDistributor.PLAYER.with { it })
             }
         }
+        return true
     }
 
-    private fun onEnd() {
+    private fun onEnd(): Boolean {
         manager.team.onlineMembers.forEach {
             DialogueScreenPacket(false, npc != null).send(PacketDistributor.PLAYER.with { it })
         }
+
+        //Если нпс ещё не прогрузился, то ждём
+        if(npc?.isLoaded == false) return true
         npc?.let {
-            val entity = it()
+            val entity = it()!!
             entity[NPCCapability::class].icon = NpcIcon.EMPTY
             DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
             entity.onInteract = NPCEntity.EMPTY_INTERACT
         }
+        return false
     }
 
     override fun serializeNBT() = CompoundTag().apply {
@@ -148,24 +154,24 @@ class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine)
     var dialogueNpc: NPCProperty? = null
 
     override fun NPCProperty.sayComponent(text: () -> Component): SimpleNode {
+        waitLoading()
         if (action == ChoiceAction.WORLD) {
             return next {
                 val component =
-                    Component.literal("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").append(text())
+                    Component.literal("§6[§7" + this@sayComponent()!!.displayName.string + "§6]§7 ").append(text())
                 stateMachine.team.onlineMembers.forEach { it.sendSystemMessage(component) }
             }
         } else {
-            val result = +SimpleNode {
-                val npc = this@sayComponent()
+            +ClickNode(MouseButton.LEFT)
+
+            return next {
+                val npc = this@sayComponent()!!
                 SERVER_OPTIONS.update(manager.team) {
                     this.text = text()
                     this.name = npc.displayName
                     if(npc !in characters) characters.add(npc)
                 }
             }
-            +ClickNode(MouseButton.LEFT)
-
-            return result
         }
     }
 

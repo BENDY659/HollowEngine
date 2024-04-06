@@ -92,57 +92,70 @@ abstract class IContextBuilder {
         }
     }.apply { manager = stateMachine }
 
+    fun NPCProperty.waitLoading() = await { !isLoaded }
+
+
     var NPCProperty.hitboxMode
-        get(): HitboxMode = this()[NPCCapability::class].hitboxMode
+        get(): HitboxMode = this()!![NPCCapability::class].hitboxMode
         set(value) {
+            this.waitLoading()
             next {
-                this@hitboxMode()[NPCCapability::class].hitboxMode = value
+                this@hitboxMode()!![NPCCapability::class].hitboxMode = value
             }
         }
 
     var NPCProperty.icon
-        get(): NpcIcon = this()[NPCCapability::class].icon
+        get(): NpcIcon = this()!![NPCCapability::class].icon
         set(value) {
+            this.waitLoading()
             next {
-                this@icon()[NPCCapability::class].icon = value
+                this@icon()!![NPCCapability::class].icon = value
             }
         }
 
     var NPCProperty.invulnerable
-        get() = this().isInvulnerable
+        get() = this()!!.isInvulnerable
         set(value) {
+            this.waitLoading()
             next {
-                this@invulnerable().isInvulnerable = value
+                this@invulnerable()!!.isInvulnerable = value
             }
         }
 
     var NPCProperty.name: String
-        get() = this().displayName.string
+        get() = this()!!.displayName.string
         set(value) {
+            this.waitLoading()
             next {
-                this@name().customName = value.mcTranslate
+                this@name()!!.customName = value.mcTranslate
             }
         }
 
     infix fun NPCProperty.giveLeftHand(item: () -> ItemStack?) {
+        this.waitLoading()
         next {
-            this@giveLeftHand().setItemInHand(InteractionHand.OFF_HAND, item() ?: ItemStack.EMPTY)
+            this@giveLeftHand()!!.setItemInHand(InteractionHand.OFF_HAND, item() ?: ItemStack.EMPTY)
         }
     }
 
     infix fun NPCProperty.giveRightHand(item: () -> ItemStack?) {
+        this.waitLoading()
         next {
-            this@giveRightHand().setItemInHand(InteractionHand.MAIN_HAND, item() ?: ItemStack.EMPTY)
+            this@giveRightHand()!!.setItemInHand(InteractionHand.MAIN_HAND, item() ?: ItemStack.EMPTY)
         }
     }
 
     infix fun NPCProperty.configure(body: AnimatedEntityCapability.() -> Unit) {
+        this.waitLoading()
         next {
-            this@configure()[AnimatedEntityCapability::class].apply(body)
+            this@configure()!![AnimatedEntityCapability::class].apply(body)
         }
     }
 
-    fun NPCProperty.despawn() = next { this@despawn().remove(Entity.RemovalReason.DISCARDED) }
+    fun NPCProperty.despawn() {
+        this.waitLoading()
+        next { this@despawn()!!.remove(Entity.RemovalReason.DISCARDED) }
+    }
 
     @Suppress("UNCHECKED_CAST")
     inline infix fun <reified T> NPCProperty.moveTo(target: NpcTarget<T>) {
@@ -156,8 +169,9 @@ abstract class IContextBuilder {
     }
 
     infix fun NPCProperty.moveToBiome(biomeName: () -> String) {
+        this.waitLoading()
         +NpcMoveToBlockNode(this@moveToBiome) {
-            val npc = this@moveToBiome()
+            val npc = this@moveToBiome()!!
             val biome = biomeName().rl
 
             val pos = (npc.level as ServerLevel).findClosestBiome3d(
@@ -168,8 +182,9 @@ abstract class IContextBuilder {
     }
 
     fun NPCProperty.moveToStructure(structureName: () -> String, offset: () -> BlockPos = { BlockPos.ZERO }) {
+        this.waitLoading()
         +NpcMoveToBlockNode(this@moveToStructure) {
-            val npc = this@moveToStructure()
+            val npc = this@moveToStructure()!!
             val level = npc.level as ServerLevel
             val structure = level.getStructure(structureName(), npc.blockPosition()).pos
             val offsetPos = offset()
@@ -183,46 +198,61 @@ abstract class IContextBuilder {
     }
 
     inline infix fun <reified T> NPCProperty.moveAlwaysTo(target: NpcTarget<T>) {
+        this.waitLoading()
+
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> next {
-                this@moveAlwaysTo().npcTarget.movingPos = target() as Vec3
-                this@moveAlwaysTo().npcTarget.movingEntity = null
-                this@moveAlwaysTo().npcTarget.movingTeam = null
+                this@moveAlwaysTo()!!.npcTarget.apply {
+                    movingPos = target() as Vec3
+                    movingEntity = null
+                    movingTeam = null
+                }
             }
 
             Entity::class.java.isAssignableFrom(type) -> next {
-                this@moveAlwaysTo().npcTarget.movingPos = null
-                this@moveAlwaysTo().npcTarget.movingEntity = target() as Entity
-                this@moveAlwaysTo().npcTarget.movingTeam = null
+                this@moveAlwaysTo()!!.npcTarget.apply {
+                    movingPos = null
+                    movingEntity = target() as Entity
+                    movingTeam = null
+                }
             }
 
             Team::class.java.isAssignableFrom(type) -> next {
-                this@moveAlwaysTo().npcTarget.movingPos = null
-                this@moveAlwaysTo().npcTarget.movingEntity = null
-                this@moveAlwaysTo().npcTarget.movingTeam = target() as Team
+                this@moveAlwaysTo()!!.npcTarget.apply {
+                    movingPos = null
+                    movingEntity = null
+                    movingTeam = target() as Team
+                }
             }
 
             else -> throw IllegalArgumentException("Can't move to ${type.name} target!")
         }
     }
 
-    fun NPCProperty.stopMoveAlways() = next {
-        this@stopMoveAlways().npcTarget.movingPos = null
-        this@stopMoveAlways().npcTarget.movingEntity = null
-        this@stopMoveAlways().npcTarget.movingTeam = null
+    fun NPCProperty.stopMoveAlways() {
+        this.waitLoading()
+        next {
+            this@stopMoveAlways()!!.npcTarget.apply {
+                movingPos = null
+                movingEntity = null
+                movingTeam = null
+            }
+        }
     }
 
     inline infix fun <reified T> NPCProperty.setTarget(target: NpcTarget<T>) {
+        waitLoading()
+
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> throw UnsupportedOperationException("Can't attack a block!")
             LivingEntity::class.java.isAssignableFrom(type) -> next {
-                this@setTarget().target = target() as LivingEntity
+                this@setTarget()!!.target = target() as LivingEntity
             }
 
             Team::class.java.isAssignableFrom(type) -> next {
-                this@setTarget().target = (target() as Team).onlineMembers
+                this@setTarget()!!.target = (target() as Team).onlineMembers
                     .minByOrNull { it.distanceToSqr(this@setTarget()) }
             }
 
@@ -231,33 +261,37 @@ abstract class IContextBuilder {
     }
 
     fun NPCProperty.clearTarget() {
-        next { this@clearTarget().target = null }
+        waitLoading()
+        next { this@clearTarget()!!.target = null }
     }
 
     infix fun NPCProperty.setPose(fileName: () -> String) {
+        waitLoading()
         next {
             val file = fileName()
             val replay = RawPose.fromNBT(
                 DirectoryManager.HOLLOW_ENGINE.resolve("npcs/poses/").resolve(file).inputStream().loadAsNBT()
             )
-            this@setPose()[AnimatedEntityCapability::class].pose = replay
+            this@setPose()!![AnimatedEntityCapability::class].pose = replay
         }
     }
 
     fun NPCProperty.clearPose() {
-        next { this@clearPose()[AnimatedEntityCapability::class].pose = RawPose() }
+        waitLoading()
+        next { this@clearPose()!![AnimatedEntityCapability::class].pose = RawPose() }
     }
 
     infix fun NPCProperty.play(block: AnimationContainer.() -> Unit) {
+        waitLoading()
         next {
             val container = AnimationContainer().apply(block)
 
-            val serverLayers = this@play()[AnimatedEntityCapability::class].layers
+            val serverLayers = this@play()!![AnimatedEntityCapability::class].layers
 
             if (serverLayers.any { it.animation == container.animation }) return@next
 
             StartAnimationPacket(
-                this@play().id, container.animation, container.layerMode, container.playType, container.speed
+                this@play()!!.id, container.animation, container.layerMode, container.playType, container.speed
             ).send(PacketDistributor.TRACKING_ENTITY.with(this@play))
 
             if (container.playType != PlayMode.ONCE) {
@@ -288,18 +322,22 @@ abstract class IContextBuilder {
     }
 
     infix fun NPCProperty.stop(animation: () -> String) {
+        waitLoading()
         next {
             val anim = animation()
-            this@stop()[AnimatedEntityCapability::class].layers.removeIfNoUpdate { it.animation == anim }
-            StopAnimationPacket(this@stop().id, anim).send(PacketDistributor.TRACKING_ENTITY.with(this@stop))
+            this@stop()!![AnimatedEntityCapability::class].layers.removeIfNoUpdate { it.animation == anim }
+            StopAnimationPacket(this@stop()!!.id, anim).send(PacketDistributor.TRACKING_ENTITY.with(this@stop))
         }
     }
 
     infix fun NPCProperty.useBlock(target: () -> Vec3) {
+        waitLoading()
         this moveTo target
+        waitLoading()
         this lookAt target
+        waitLoading()
         next {
-            val entity = this@useBlock()
+            val entity = this@useBlock()!!
             val pos = target()
             val hit = entity.level.clip(
                 ClipContext(
@@ -313,10 +351,13 @@ abstract class IContextBuilder {
     }
 
     infix fun NPCProperty.destroyBlock(target: () -> Vec3) {
+        waitLoading()
         this moveTo target
+        waitLoading()
         this lookAt target
+        waitLoading()
         next {
-            val entity = this@destroyBlock()
+            val entity = this@destroyBlock()!!
             val manager = entity.fakePlayer.gameMode
 
             manager.destroyBlock(BlockPos(target()))
@@ -324,18 +365,21 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.dropItem(stack: () -> ItemStack) = next {
-        val entity = this@dropItem()
-        val p = entity.position()
-        val entityStack = ItemEntity(entity.level, p.x, p.y + entity.eyeHeight, p.z, stack())
-        entityStack.setDefaultPickUpDelay()
-        val f8 = Mth.sin(entity.xRot * Mth.PI / 180f)
-        val f3 = Mth.sin(entity.yHeadRot * Mth.PI / 180f)
-        val f4 = Mth.cos(entity.yHeadRot * Mth.PI / 180f)
-        entityStack.setDeltaMovement(
-            -f3 * 0.3, -f8 * 0.3 + 0.1, f4 * 0.3
-        )
-        entity.level.addFreshEntity(entityStack)
+    infix fun NPCProperty.dropItem(stack: () -> ItemStack) {
+        waitLoading()
+        next {
+            val entity = this@dropItem()!!
+            val p = entity.position()
+            val entityStack = ItemEntity(entity.level, p.x, p.y + entity.eyeHeight, p.z, stack())
+            entityStack.setDefaultPickUpDelay()
+            val f8 = Mth.sin(entity.xRot * Mth.PI / 180f)
+            val f3 = Mth.sin(entity.yHeadRot * Mth.PI / 180f)
+            val f4 = Mth.cos(entity.yHeadRot * Mth.PI / 180f)
+            entityStack.setDeltaMovement(
+                -f3 * 0.3, -f8 * 0.3 + 0.1, f4 * 0.3
+            )
+            entity.level.addFreshEntity(entityStack)
+        }
     }
 
     infix fun NPCProperty.requestItems(block: GiveItemList.() -> Unit) {
@@ -346,22 +390,34 @@ abstract class IContextBuilder {
         +NpcInteractNode(this@waitInteract)
     }
 
-    infix fun NPCProperty.tpTo(target: TeleportContainer.() -> Unit) = next {
-        val tp = TeleportContainer().apply(target)
-        val teleport = tp.pos
-        this@tpTo.invoke().teleportTo(teleport.x, teleport.y, teleport.z)
+    infix fun NPCProperty.tpTo(target: TeleportContainer.() -> Unit) {
+        waitLoading()
+        next {
+            val tp = TeleportContainer().apply(target)
+            val teleport = tp.pos
+            this@tpTo()!!.teleportTo(teleport.x, teleport.y, teleport.z)
+        }
     }
 
-    infix fun NPCProperty.addTrade(offer: () -> MerchantOffer) = next {
-        this@addTrade().npcOffers.add(offer())
+    infix fun NPCProperty.addTrade(offer: () -> MerchantOffer) {
+        waitLoading()
+        next {
+            this@addTrade()!!.npcOffers.add(offer())
+        }
     }
 
-    fun NPCProperty.clearTrades() = next {
-        this@clearTrades().npcOffers.clear()
+    fun NPCProperty.clearTrades() {
+        waitLoading()
+        next {
+            this@clearTrades()!!.npcOffers.clear()
+        }
     }
 
-    fun NPCProperty.clearTradeUses() = next {
-        this@clearTradeUses().npcOffers.forEach { it.resetUses() }
+    fun NPCProperty.clearTradeUses() {
+        waitLoading()
+        next {
+            this@clearTradeUses()!!.npcOffers.forEach { it.resetUses() }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -377,43 +433,54 @@ abstract class IContextBuilder {
 
     @Suppress("UNCHECKED_CAST")
     inline infix fun <reified T> NPCProperty.lookAlwaysAt(target: NpcTarget<T>) {
-
+        waitLoading()
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> next {
-                this@lookAlwaysAt().npcTarget.lookingPos = target() as Vec3
-                this@lookAlwaysAt().npcTarget.lookingEntity = null
-                this@lookAlwaysAt().npcTarget.lookingTeam = null
+                this@lookAlwaysAt()!!.npcTarget.apply {
+                    lookingPos = target() as Vec3
+                    lookingEntity = null
+                    lookingTeam = null
+                }
             }
 
             Entity::class.java.isAssignableFrom(type) -> next {
-                this@lookAlwaysAt().npcTarget.lookingPos = null
-                this@lookAlwaysAt().npcTarget.lookingEntity = target() as Entity
-                this@lookAlwaysAt().npcTarget.lookingTeam = null
+                this@lookAlwaysAt()!!.npcTarget.apply {
+                    lookingPos = null
+                    lookingEntity = target() as Entity
+                    lookingTeam = null
+                }
             }
 
             Team::class.java.isAssignableFrom(type) -> next {
-                this@lookAlwaysAt().npcTarget.lookingPos = null
-                this@lookAlwaysAt().npcTarget.lookingEntity = null
-                this@lookAlwaysAt().npcTarget.lookingTeam = target() as Team
+                this@lookAlwaysAt()!!.npcTarget.apply {
+                    lookingPos = null
+                    lookingEntity = null
+                    lookingTeam = target() as Team
+                }
             }
 
             else -> throw IllegalArgumentException("Can't look at ${type.name} target!")
         }
     }
 
-    fun NPCProperty.stopLookAlways() = next {
-        this@stopLookAlways().npcTarget.lookingPos = null
-        this@stopLookAlways().npcTarget.lookingEntity = null
-        this@stopLookAlways().npcTarget.lookingTeam = null
+    fun NPCProperty.stopLookAlways() {
+        waitLoading()
+        next {
+            this@stopLookAlways()!!.npcTarget.apply {
+                lookingPos = null
+                lookingEntity = null
+                lookingTeam = null
+            }
+        }
     }
 
 
     fun NPCProperty.lookAtEntityType(entity: () -> String) {
         val entityType = ForgeRegistries.ENTITY_TYPES.getValue(entity().rl)!!
-
+        waitLoading()
         lookAt {
-            val npc = this()
+            val npc = this()!!
             val level = npc.level
 
             level.getEntitiesOfClass(LivingEntity::class.java, AABB.ofSize(npc.position(), 25.0, 25.0, 25.0)) {
@@ -423,23 +490,25 @@ abstract class IContextBuilder {
     }
 
     infix fun NPCProperty.replay(file: () -> String) {
+        waitLoading()
         next {
             val replay = Replay.fromFile(DirectoryManager.HOLLOW_ENGINE.resolve("replays").resolve(file()))
-            ReplayPlayer(this@replay()).apply {
+            ReplayPlayer(this@replay()!!).apply {
                 saveEntity = true
                 isLooped = false
-                play(this@replay().level, replay)
+                play(this@replay()!!.level, replay)
             }
         }
     }
 
     infix fun NPCProperty.replayAndWait(file: () -> String) {
+        waitLoading()
         wait {
             val replay = Replay.fromFile(DirectoryManager.HOLLOW_ENGINE.resolve("replays").resolve(file()))
-            ReplayPlayer(this@replayAndWait()).apply {
+            ReplayPlayer(this@replayAndWait()!!).apply {
                 saveEntity = true
                 isLooped = false
-                play(this@replayAndWait().level, replay)
+                play(this@replayAndWait()!!.level, replay)
             }
             replay.points.count()
         }
@@ -527,9 +596,12 @@ abstract class IContextBuilder {
 
     infix fun NPCProperty.say(text: () -> String) = sayComponent { text().mcTranslate }
 
-    open infix fun NPCProperty.sayComponent(text: () -> Component) = +SimpleNode {
-        val component = ("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").mcText + text()
-        stateMachine.team.onlineMembers.forEach { it.sendSystemMessage(component) }
+    open infix fun NPCProperty.sayComponent(text: () -> Component): SimpleNode {
+        waitLoading()
+        return next {
+            val component = ("§6[§7" + this@sayComponent()!!.displayName.string + "§6]§7 ").mcText + text()
+            stateMachine.team.onlineMembers.forEach { it.sendSystemMessage(component) }
+        }
     }
 
     @JvmName("playerSay")
@@ -686,7 +758,7 @@ abstract class IContextBuilder {
                     currentWorld: ServerLevel,
                     destWorld: ServerLevel,
                     yaw: Float,
-                    repositionEntity: Function<Boolean, Entity>
+                    repositionEntity: Function<Boolean, Entity>,
                 ): Entity {
                     val teleportedEntity = repositionEntity.apply(false) as ServerPlayer
 

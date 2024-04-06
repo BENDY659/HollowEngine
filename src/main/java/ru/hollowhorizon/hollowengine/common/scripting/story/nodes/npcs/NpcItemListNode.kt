@@ -48,12 +48,13 @@ private fun ItemStack.isItemStackEqual(it: ItemStack): Boolean {
     return true
 }
 
-class NpcItemListNode(itemList: GiveItemList.() -> Unit, npcConsumer: NPCProperty) : Node() {
-    val npc by lazy { npcConsumer() }
+class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: NPCProperty) : Node() {
     val itemList by lazy { GiveItemList().apply(itemList) }
     var isStarted = false
 
     override fun tick(): Boolean {
+        if(!npc.isLoaded) return true
+        val npc = npc()!!
         if (!isStarted) {
             isStarted = true
             npc.shouldGetItem = { entityItem ->

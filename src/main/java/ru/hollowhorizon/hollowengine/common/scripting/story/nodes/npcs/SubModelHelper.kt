@@ -15,7 +15,7 @@ fun subModel(body: SubModel.() -> Unit): SubModel {
 
 val NPCProperty.asSubModel: SubModel
     get() {
-        val npc = this()
+        val npc = this()!!
         val original = npc[AnimatedEntityCapability::class]
         return subModel {
             model = original.model
@@ -26,4 +26,4 @@ val NPCProperty.asSubModel: SubModel
         }
     }
 
-val NPCProperty.subModels get() = this()[AnimatedEntityCapability::class].subModels
+val NPCProperty.subModels get() = this()!![AnimatedEntityCapability::class].subModels
