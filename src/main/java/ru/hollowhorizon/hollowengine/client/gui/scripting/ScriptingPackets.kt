@@ -6,7 +6,10 @@ import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Player
+import org.apache.commons.io.FileUtils
+import ru.hollowhorizon.hc.client.utils.colored
 import ru.hollowhorizon.hc.client.utils.mcText
+import ru.hollowhorizon.hc.client.utils.plus
 import ru.hollowhorizon.hc.common.network.HollowPacketV2
 import ru.hollowhorizon.hc.common.network.HollowPacketV3
 import ru.hollowhorizon.hollowengine.common.events.StoryHandler
@@ -83,6 +86,68 @@ class SaveFilePacket(val path: String, val text: String) : HollowPacketV3<SaveFi
 
 @HollowPacketV2(HollowPacketV2.Direction.TO_SERVER)
 @Serializable
+class DeleteFilePacket(val path: String) : HollowPacketV3<DeleteFilePacket> {
+    override fun handle(player: Player, data: DeleteFilePacket) {
+        if (player.hasPermissions(2)) {
+            val file = data.path.fromReadablePath()
+            if (file.exists()) {
+                if(file.isDirectory) FileUtils.deleteDirectory(file)
+                else file.delete()
+                val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
+                FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
+                    LoadTreePacket(tree).send(player as ServerPlayer)
+                }
+            }
+        } else {
+            player.sendSystemMessage("You don't have permissions to delete scripts!".mcText)
+        }
+    }
+}
+
+@HollowPacketV2(HollowPacketV2.Direction.TO_SERVER)
+@Serializable
+class RenameFilePacket(val path: String, val newName: String) : HollowPacketV3<RenameFilePacket> {
+    override fun handle(player: Player, data: RenameFilePacket) {
+        if (player.hasPermissions(2)) {
+            val file = data.path.fromReadablePath()
+            if (file.exists()) {
+                file.renameTo(file.parentFile.resolve(newName))
+                val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
+                FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
+                    LoadTreePacket(tree).send(player as ServerPlayer)
+                }
+            }
+        } else {
+            player.sendSystemMessage("You don't have permissions to delete scripts!".mcText)
+        }
+    }
+}
+
+@HollowPacketV2(HollowPacketV2.Direction.TO_SERVER)
+@Serializable
+class CreateFilePacket(val path: String) : HollowPacketV3<CreateFilePacket> {
+    override fun handle(player: Player, data: CreateFilePacket) {
+        if (player.hasPermissions(2)) {
+            val file = data.path.fromReadablePath()
+            if (!file.exists()) {
+                if (!file.parentFile.exists()) file.parentFile.mkdirs()
+
+                if(!file.name.contains(".")) file.mkdirs()
+                else file.createNewFile()
+
+                val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
+                FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
+                    LoadTreePacket(tree).send(player as ServerPlayer)
+                }
+            }
+        } else {
+            player.sendSystemMessage("You don't have permissions to create scripts!".mcText)
+        }
+    }
+}
+
+@HollowPacketV2(HollowPacketV2.Direction.TO_SERVER)
+@Serializable
 class RunScriptPacket(val path: String) : HollowPacketV3<RunScriptPacket> {
     override fun handle(player: Player, data: RunScriptPacket) {
 
@@ -130,9 +195,11 @@ class ScriptCompiledPacket(val script: String) : HollowPacketV3<ScriptCompiledPa
     override fun handle(player: Player, data: ScriptCompiledPacket) {
         if (CodeEditor.currentFile == script) {
             CodeEditor.editor.setErrorMarkers(emptyMap())
-            if(Minecraft.getInstance().screen is CodeEditorGui) {
+            if (Minecraft.getInstance().screen is CodeEditorGui) {
                 (Minecraft.getInstance().screen as CodeEditorGui).onClose()
             }
+            player.sendSystemMessage("[HollowEngine] ".mcText.colored(0xEBA434) +
+                    "Скрипт успешно запущен!".mcText.colored(0x34eb34))
         }
     }
 }

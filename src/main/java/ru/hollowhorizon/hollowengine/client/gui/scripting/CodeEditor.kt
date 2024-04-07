@@ -5,11 +5,12 @@ import imgui.ImGuiWindowClass
 import imgui.extension.texteditor.TextEditor
 import imgui.extension.texteditor.TextEditorLanguageDefinition
 import imgui.flag.*
+import imgui.type.ImBoolean
 import imgui.type.ImInt
+import imgui.type.ImString
 import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
 import net.minecraftforge.fml.ModList
-import ru.hollowhorizon.hc.HollowCore
 import ru.hollowhorizon.hc.client.handlers.TickHandler
 import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hc.client.utils.toTexture
@@ -22,6 +23,8 @@ import java.io.File
 object CodeEditor {
     val files = HashSet<ScriptData>()
     var currentFile = ""
+    var currentPath = ""
+    var selectedPath = ""
     val editor = TextEditor().apply {
         setLanguageDefinition(KOTLIN_LANG)
 
@@ -47,8 +50,16 @@ object CodeEditor {
         """.trimIndent()
     }
     var tree = tree(DirectoryManager.HOLLOW_ENGINE)
+    var updateTime = 0
+    val input = ImString()
+    var inputText = ""
+    var inputAction = -1
 
     fun draw() {
+        if (TickHandler.currentTicks - updateTime > 100) {
+            updateTime = TickHandler.currentTicks
+            RequestTreePacket().send()
+        }
 
         ImGui.setNextWindowPos(0f, 0f)
         ImGui.setNextWindowSize(width, height)
@@ -123,12 +134,12 @@ object CodeEditor {
             ImGui.sameLine()
             ImGui.setCursorPosX(ImGui.getWindowWidth() - 100f)
             if (ImGui.imageButton("hollowengine:textures/gui/play.png".rl.toTexture().id, 32f, 32f)) {
-                files.find { it.name == currentFile }?.path?.let { RunScriptPacket(it).send() }
+                RunScriptPacket(currentPath).send()
             }
             if (ImGui.isItemHovered()) ImGui.setTooltip("Запустить скрипт")
             ImGui.sameLine()
             if (ImGui.imageButton("hollowengine:textures/gui/stop.png".rl.toTexture().id, 32f, 32f)) {
-                files.find { it.name == currentFile }?.path?.let { StopScriptPacket(it).send() }
+                StopScriptPacket(currentPath).send()
             }
             if (ImGui.isItemHovered()) ImGui.setTooltip("Остановить скрипт")
         }
@@ -137,32 +148,162 @@ object CodeEditor {
         files.forEach { file ->
             if (ImGui.beginTabItem(file.name, file.open, ImGuiTabItemFlags.None)) {
                 currentFile = file.name
+                currentPath = file.path
                 editor.text = file.code
                 editor.render("Code Editor")
-                file.code = editor.text.substringBeforeLast("\n")
 
                 if (editor.isTextChanged) {
+                    file.code = editor.text.substringBeforeLast("\n")
                     SaveFilePacket(file.path, file.code).send()
-                    RequestTreePacket().send()
                 }
+
+
 
                 ImGui.endTabItem()
             }
         }
         ImGui.endTabBar()
         ImGui.end()
+
+        drawModalInput()
     }
 
     fun drawTree(tree: Tree) {
         val flags =
             if (tree.drawArrow) ImGuiTreeNodeFlags.SpanFullWidth else ImGuiTreeNodeFlags.NoTreePushOnOpen or ImGuiTreeNodeFlags.Leaf or ImGuiTreeNodeFlags.SpanFullWidth
 
+        drawFolderPopup(tree.path)
+        drawFilePopup(tree.path)
+        var hovered = false
+        var ignore = false
         if (ImGui.treeNodeEx(tree.value, flags)) {
+            hovered = ImGui.isItemHovered()
             tree.children.forEach { drawTree(it) }
+
+            ignore = true
             if (tree.drawArrow) ImGui.treePop()
         }
+        hovered = hovered || (ImGui.isItemHovered() && !ignore)
+        if (hovered && ImGui.isMouseClicked(1)) {
+            selectedPath = tree.path
+            if (tree.drawArrow) ImGui.openPopup("FolderTreePopup##" + tree.path)
+            else ImGui.openPopup("FileTreePopup##" + tree.path)
+        }
+
         if (ImGui.isItemActivated() && ImGui.isMouseDoubleClicked(0) && !tree.drawArrow) {
             RequestFilePacket(tree.path).send()
+        }
+    }
+
+    fun drawFolderPopup(folder: String) {
+        if (ImGui.beginPopup("FileTreePopup##$folder")) {
+            if (ImGui.menuItem("Переименовать")) {
+                inputAction = 0
+                inputText = "Введите новое название скрипта:"
+                ImGui.closeCurrentPopup()
+            }
+            if (ImGui.menuItem("Удалить")) {
+                inputAction = 1
+                inputText = "Вы уверены, что хотите\nудалить этот скрипт?"
+                ImGui.closeCurrentPopup()
+            }
+            ImGui.endPopup()
+        }
+    }
+
+    fun drawFilePopup(file: String) {
+        if (ImGui.beginPopup("FolderTreePopup##$file")) {
+            if (ImGui.menuItem("Создать папку")) {
+                inputAction = 2
+                inputText = "Введите название папки:"
+                ImGui.closeCurrentPopup()
+            }
+
+            if (ImGui.menuItem("Создать Сюжетное события")) {
+                inputAction = 3
+                inputText = "Введите название скрипта:"
+                ImGui.closeCurrentPopup()
+            }
+
+            if (ImGui.menuItem("Создать Контент-скрипт")) {
+                inputAction = 4
+                inputText = "Введите название скрипта:"
+                ImGui.closeCurrentPopup()
+            }
+            if (ImGui.menuItem("Создать Мод-скрипт")) {
+                inputAction = 5
+                inputText = "Введите название скрипта:"
+                ImGui.closeCurrentPopup()
+            }
+
+            if (ImGui.menuItem("Удалить папку")) {
+                inputAction = 6
+                inputText = "Вы уверены, что хотите\nудалить эту папку?"
+                ImGui.closeCurrentPopup()
+            }
+            ImGui.endPopup()
+        }
+    }
+
+    fun drawModalInput() {
+        val center = ImGui.getMainViewport().center
+        ImGui.setNextWindowPos(center.x, center.y, ImGuiCond.Appearing, 0.5f, 0.5f);
+
+        if (inputAction != -1) {
+            ImGui.openPopup("Input")
+        }
+
+        if (ImGui.beginPopupModal(
+                "Input", ImBoolean(true), ImGuiWindowFlags.AlwaysAutoResize or
+                        ImGuiWindowFlags.NoTitleBar
+            )
+        ) {
+            ImGui.text(inputText)
+            ImGui.separator()
+
+            if (inputAction == 1 || inputAction == 6) {
+                if (ImGui.button("Да", 120f, 0f)) {
+                    inputAction = -1
+                    files.removeIf { it.path.startsWith(selectedPath) }
+                    if(selectedPath.isNotEmpty()) DeleteFilePacket(selectedPath).send()
+                    ImGui.closeCurrentPopup()
+                    input.set("")
+                }
+                ImGui.sameLine()
+                if (ImGui.button("Отмена", 120f, 0f)) {
+                    inputAction = -1
+                    ImGui.closeCurrentPopup()
+                    input.set("")
+                }
+            } else {
+                ImGui.inputText("##Filename", input)
+
+                if (ImGui.button("OK", 120f, 0f)) {
+                    val input = input.get()
+
+                    when(inputAction) {
+                        0 -> {
+                            RenameFilePacket(selectedPath, input).send()
+                            files.removeIf { it.path == selectedPath }
+                        }
+                        2 -> CreateFilePacket("$selectedPath/$input").send()
+                        3 -> CreateFilePacket("$selectedPath/$input.se.kts").send()
+                        4 -> CreateFilePacket("$selectedPath/$input.content.kts").send()
+                        5 -> CreateFilePacket("$selectedPath/$input.mod.kts").send()
+                    }
+
+                    inputAction = -1
+                    ImGui.closeCurrentPopup()
+                    this.input.set("")
+                }
+                ImGui.sameLine()
+                if (ImGui.button("Отмена", 120f, 0f)) {
+                    inputAction = -1
+                    ImGui.closeCurrentPopup()
+                    input.set("")
+                }
+            }
+            ImGui.endPopup()
         }
     }
 
