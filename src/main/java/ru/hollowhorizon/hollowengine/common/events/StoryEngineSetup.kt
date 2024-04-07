@@ -23,6 +23,8 @@ object StoryEngineSetup {
         forgeBus.addListener(StoryHandler::onServerTick)
         forgeBus.addListener(StoryHandler::onServerShutdown)
         forgeBus.addListener(StoryHandler::onWorldSave)
+        forgeBus.addListener(StoryHandler::onScriptError)
+        forgeBus.addListener(StoryHandler::onScriptCompiled)
         if(isPhysicalClient) forgeBus.register(AimMarkRenderer)
         MOD_BUS.addListener(::onAttributeCreation)
         MOD_BUS.addListener(this::entityRenderers)

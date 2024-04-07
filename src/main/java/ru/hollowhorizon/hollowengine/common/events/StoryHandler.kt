@@ -15,11 +15,16 @@ import net.minecraftforge.server.ServerLifecycleHooks
 import ru.hollowhorizon.hc.client.utils.isLogicalClient
 import ru.hollowhorizon.hc.client.utils.mcText
 import ru.hollowhorizon.hc.client.utils.mcTranslate
+import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptCompiledPacket
+import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptError
+import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptErrorPacket
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager.fromReadablePath
 import ru.hollowhorizon.hollowengine.common.scripting.StoryLogger
 import ru.hollowhorizon.hollowengine.common.scripting.story.StoryStateMachine
 import ru.hollowhorizon.hollowengine.common.scripting.story.runScript
+import ru.hollowhorizon.kotlinscript.common.events.ScriptCompiledEvent
+import ru.hollowhorizon.kotlinscript.common.events.ScriptErrorEvent
 
 object StoryHandler {
     private val events = HashMap<Team, HashMap<String, StoryStateMachine>>()
@@ -109,6 +114,24 @@ object StoryHandler {
             team.save()
             team.manager.save()
             team.manager.saveNow()
+        }
+    }
+
+    @JvmStatic
+    fun onScriptError(event: ScriptErrorEvent) {
+        val server = ServerLifecycleHooks.getCurrentServer()
+
+        server.playerList.players.forEach { player ->
+            ScriptErrorPacket(event.file.name, event.error.map { ScriptError(it.severity, it.message, it.source, it.line, it.column) }).send(player)
+        }
+    }
+
+    @JvmStatic
+    fun onScriptCompiled(event: ScriptCompiledEvent) {
+        val server = ServerLifecycleHooks.getCurrentServer()
+
+        server.playerList.players.forEach { player ->
+            ScriptCompiledPacket(event.file.name).send(player)
         }
     }
 

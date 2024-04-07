@@ -20,11 +20,14 @@ import ru.hollowhorizon.hc.client.utils.mcText
 import ru.hollowhorizon.hc.client.utils.nbt.ForVec3
 import ru.hollowhorizon.hc.common.network.HollowPacketV2
 import ru.hollowhorizon.hc.common.network.HollowPacketV3
+import ru.hollowhorizon.hollowengine.client.gui.widget.ComboFilterState
+import ru.hollowhorizon.hollowengine.client.gui.widget.ImInputCombo
 import ru.hollowhorizon.hollowengine.common.commands.listModels
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 
 class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
+    private val state = ComboFilterState()
     val npcName = ImString().apply {
         set(
             arrayOf(
@@ -107,36 +110,7 @@ class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
             )
             ImGui.pushItemWidth(400f)
             ImGui.inputText("Имя персонажа", npcName)
-            ImGui.inputText("Модель персонажа", npcModel)
-
-            var isFocused = ImGui.isItemFocused()
-            isOpen.set(isOpen.get() or ImGui.isItemActive())
-            if (isOpen.get()) {
-                ImGui.sameLine()
-                ImGui.setNextWindowPos(ImGui.getItemRectMinX(), ImGui.getItemRectMaxY())
-                ImGui.setNextWindowSize(ImGui.getItemRectSizeX(), 0f)
-                if (ImGui.begin(
-                        "##popup", isOpen,
-                        ImGuiWindowFlags.NoTitleBar or ImGuiWindowFlags.NoMove or ImGuiWindowFlags.NoResize
-                    )
-                ) {
-                    isFocused = isFocused or ImGui.isWindowFocused()
-                    //ImGui.bringWindowToDisplayFront(ImGui::GetCurrentWindow());
-
-                    listModels().filter { it.startsWith(npcModel.get()) }.forEach {
-                        if (ImGui.selectable(it) || (ImGui.isItemFocused() && ImGui.isKeyPressed(
-                                imgui.flag.ImGuiKey.Enter
-                            ))
-                        ) {
-                            npcModel.set(it)
-                            isOpen.set(false)
-                        }
-                    }
-                }
-                ImGui.end()
-                ImGui.newLine()
-                isOpen.set(isOpen.get() && isFocused)
-            }
+            ImInputCombo.inputCombo("Модель персонажа", npcModel, state, *listModels().toTypedArray())
 
             ImGui.inputText("Мир", npcWorld)
             ImGui.popItemWidth()

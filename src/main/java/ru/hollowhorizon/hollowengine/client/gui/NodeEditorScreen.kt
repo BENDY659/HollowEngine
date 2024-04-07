@@ -65,11 +65,11 @@ class NodeEditorScreen : HollowScreen() {
             val nodeWithContextMenu = NodeEditor.getNodeWithContextMenu()
             if (nodeWithContextMenu >= 0) {
                 ImGui.openPopup("node_context")
-                ImGui.getStateStorage().setInt(ImGui.getID("delete_node_id"), nodeWithContextMenu.toInt());
+                ImGui.getStateStorage().setInt(ImGui.getID("delete_node_id"), nodeWithContextMenu.toInt())
             }
 
             if (ImGui.isPopupOpen("node_context")) {
-                val targetNode = ImGui.getStateStorage().getInt(ImGui.getID("delete_node_id"));
+                val targetNode = ImGui.getStateStorage().getInt(ImGui.getID("delete_node_id"))
                 if (ImGui.beginPopup("node_context")) {
                     if (ImGui.button("Удалить " + (graph.nodes[targetNode] as? Graph.Node)?.name)) {
                         graph.nodes.remove(targetNode)
