@@ -20,4 +20,6 @@ class CodeEditorGui: HollowScreen() {
 
         CodeEditor.onClose()
     }
+
+    override fun isPauseScreen() = false
 }
