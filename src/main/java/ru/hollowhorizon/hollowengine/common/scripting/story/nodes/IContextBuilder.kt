@@ -82,6 +82,13 @@ abstract class IContextBuilder {
         stateMachine.team.onlineMembers.forEach { CloseGuiPacket().send(PacketDistributor.PLAYER.with { it }) }
     }
 
+    fun Widget.runSingleCommandInGui(command: String): Int {
+        val server = stateMachine.server
+        val src = server.createCommandSourceStack().withPermission(4).withSuppressedOutput()
+
+        return server.commands.performPrefixedCommand(src, command)
+    }
+
     fun NPCEntity.Companion.fromSubModel(subModel: NpcContainer.() -> SubModel) = +NpcDelegate {
         NpcContainer().apply {
             val settings = subModel()
