@@ -1,16 +1,16 @@
 package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.camera
 
-import dev.ftb.mods.ftbteams.data.Team
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.GameType
 import net.minecraftforge.network.PacketDistributor
-import ru.hollowhorizon.hollowengine.common.scripting.forEachPlayer
 
 interface ICameraPath {
     val maxTime: Int
-    fun serverUpdate(team: Team)
+    fun serverUpdate(players: List<Player>)
 
-    fun onStartServer(team: Team) {
-        team.forEachPlayer {
+    fun onStartServer(players: List<ServerPlayer>) {
+        players.forEach {
             it.setGameMode(GameType.SPECTATOR)
             CameraPathPacket(this).send(PacketDistributor.PLAYER.with { it })
         }

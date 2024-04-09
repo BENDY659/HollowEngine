@@ -1,22 +1,24 @@
 package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.camera
 
 import com.mojang.math.Vector3f
-import dev.ftb.mods.ftbteams.data.Team
 import kotlinx.serialization.Serializable
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.GameType
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.network.PacketDistributor
 import ru.hollowhorizon.hc.client.utils.math.Interpolation
-import ru.hollowhorizon.hc.client.utils.nbt.*
+import ru.hollowhorizon.hc.client.utils.nbt.NBTFormat
+import ru.hollowhorizon.hc.client.utils.nbt.deserialize
+import ru.hollowhorizon.hc.client.utils.nbt.loadAsNBT
 import ru.hollowhorizon.hc.common.network.HollowPacketV2
 import ru.hollowhorizon.hc.common.network.HollowPacketV3
 import ru.hollowhorizon.hollowengine.client.camera.CameraPath
 import ru.hollowhorizon.hollowengine.client.camera.ScreenShakePacket
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager
-import ru.hollowhorizon.hollowengine.common.scripting.forEachPlayer
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.SimpleNode
@@ -32,12 +34,12 @@ class CameraPathPacket(val path: ICameraPath) : HollowPacketV3<CameraPathPacket>
 
 class CameraNode(val builder: CameraContainer.() -> Unit) : Node() {
     private val container by lazy {
-        manager.team.forEachPlayer {
+        manager.server.playerList.players.forEach {
             it.persistentData.putDouble("start_x", it.x)
             it.persistentData.putDouble("start_y", it.y)
             it.persistentData.putDouble("start_z", it.z)
         }
-        CameraContainer(manager.team).apply(builder)
+        CameraContainer(manager.server.playerList.players).apply(builder)
     }
 
     override fun tick(): Boolean {
@@ -45,7 +47,7 @@ class CameraNode(val builder: CameraContainer.() -> Unit) : Node() {
         val shouldEnd = !container.isEnd
 
         if (!shouldEnd) {
-            manager.team.forEachPlayer {
+            manager.server.playerList.players.forEach {
                 val x = it.persistentData.getDouble("start_x")
                 val y = it.persistentData.getDouble("start_y")
                 val z = it.persistentData.getDouble("start_z")
@@ -63,14 +65,30 @@ class CameraNode(val builder: CameraContainer.() -> Unit) : Node() {
 
 }
 
-class CameraContainer(val team: Team) {
+class CameraContainer(val players: List<ServerPlayer>) {
     private var isStarted = false
     private val paths = ArrayDeque<ICameraPath>()
 
-    fun spline(time: Int, path: String, interpolation: Interpolation = Interpolation.LINEAR, enableBoarders: Boolean = false, boardersInterpolation: Interpolation = Interpolation.LINEAR, rotationInterpolation: Interpolation = Interpolation.LINEAR) {
+    fun spline(
+        time: Int,
+        path: String,
+        interpolation: Interpolation = Interpolation.LINEAR,
+        enableBoarders: Boolean = false,
+        boardersInterpolation: Interpolation = Interpolation.LINEAR,
+        rotationInterpolation: Interpolation = Interpolation.LINEAR,
+    ) {
         val nbt = DirectoryManager.HOLLOW_ENGINE.resolve("camera/${path}").inputStream().loadAsNBT()
         val cameraPath = NBTFormat.deserialize<CameraPath>(nbt)
-        paths.add(CurveCameraPath(time, cameraPath, interpolation, enableBoarders, boardersInterpolation, rotationInterpolation))
+        paths.add(
+            CurveCameraPath(
+                time,
+                cameraPath,
+                interpolation,
+                enableBoarders,
+                boardersInterpolation,
+                rotationInterpolation
+            )
+        )
     }
 
     fun static(time: Int, pos: Vec3, rotation: Vec3) {
@@ -94,13 +112,13 @@ class CameraContainer(val team: Team) {
     fun update() {
         if (!isStarted) {
             paths.firstOrNull()?.reset()
-            paths.firstOrNull()?.onStartServer(team)
+            paths.firstOrNull()?.onStartServer(players)
             isStarted = true
         } else if (paths.firstOrNull()?.isEnd == true) {
             paths.removeFirst()
             isStarted = false
         }
-        paths.firstOrNull()?.serverUpdate(team)
+        paths.firstOrNull()?.serverUpdate(players)
     }
 
     val isEnd get() = paths.isEmpty()
@@ -111,7 +129,7 @@ fun IContextBuilder.camera(body: CameraContainer.() -> Unit) = +CameraNode(body)
 fun IContextBuilder.shake(config: ScreenShakePacket.() -> Unit) = +SimpleNode {
     val packet = ScreenShakePacket().apply(config)
 
-    stateMachine.team.onlineMembers.forEach {
+    stateMachine.server.playerList.players.forEach {
         packet.send(PacketDistributor.PLAYER.with { it })
     }
 }

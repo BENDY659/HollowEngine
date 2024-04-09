@@ -1,32 +1,45 @@
 package ru.hollowhorizon.hollowengine.common.scripting
 
-import dev.ftb.mods.ftbteams.data.Team
+import net.darkhax.gamestages.GameStageHelper
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.TagParser
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.TagKey
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraftforge.registries.ForgeRegistries
-import net.minecraftforge.server.ServerLifecycleHooks
 import ru.hollowhorizon.hc.client.models.gltf.manager.AnimatedEntityCapability
 import ru.hollowhorizon.hc.client.utils.rl
-import kotlin.properties.ReadOnlyProperty
+import ru.hollowhorizon.hollowengine.common.scripting.story.StoryStateMachine
+import ru.hollowhorizon.hollowengine.common.scripting.story.progressManager
+import ru.hollowhorizon.hollowengine.common.util.SafeGetter
+import ru.hollowhorizon.hollowengine.common.util.filter
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 fun main() {
-    val book = item("minecraft:written_book", 1, "{author:\"Dev\",filtered_title:\"Hollow\",pages:['{\"text\":\"Hello...\"}','{\"text\":\"There is letters\"}','{\"text\":\"на русском тоже!\\n\\n\\nда\"}'],title:\"Hollow\"}")
+    val book = item(
+        "minecraft:written_book",
+        1,
+        "{author:\"Dev\",filtered_title:\"Hollow\",pages:['{\"text\":\"Hello...\"}','{\"text\":\"There is letters\"}','{\"text\":\"на русском тоже!\\n\\n\\nда\"}'],title:\"Hollow\"}"
+    )
 }
 
 fun AnimatedEntityCapability.skin(name: String) = "skins/$name"
 
-val Team.randomPlayer get() = onlineMembers.random()
+val MinecraftServer.players get() = SafeGetter(playerList::getPlayers)
 
-val Team.ownerPlayer get() = ServerLifecycleHooks.getCurrentServer().playerList.getPlayer(owner)
+fun ServerPlayer.hasStage(stage: String) = GameStageHelper.hasStage(this, stage)
 
-fun Team.forEachPlayer(action: (ServerPlayer) -> Unit) {
-    onlineMembers.forEach { action(it) }
+fun ServerPlayer.addStage(stage: String) = GameStageHelper.addStage(this, stage)
+fun ServerPlayer.removeStage(stage: String) = GameStageHelper.removeStage(this, stage)
+val ServerPlayer.stages get() = GameStageHelper.getPlayerData(this)?.stages ?: emptyList()
+
+fun StoryStateMachine.test() {
+    val players by server.players.filter { it.hasStage("progressable") }
+
+    players.progressManager.addMessage { "Напиши привет в чат!" }
 }
 
 fun item(item: String, count: Int = 1, nbt: CompoundTag? = null) = ItemStack(
@@ -45,11 +58,12 @@ fun tag(tag: String): TagKey<Item> {
 }
 
 fun <T> runtime(default: () -> T) = RuntimeVariable(default)
-fun <T> runtime() = RuntimeVariable<T> { throw IllegalStateException("Default value not found, runtime property does not exists") }
+fun <T> runtime() =
+    RuntimeVariable<T> { throw IllegalStateException("Default value not found, runtime property does not exists") }
 
 val RUNTIME_PROPERTIES = mutableMapOf<String, Any?>()
 
-class RuntimeVariable<T>(val default: () -> T): ReadWriteProperty<Any?, T> {
+class RuntimeVariable<T>(val default: () -> T) : ReadWriteProperty<Any?, T> {
 
     @Suppress("UNCHECKED_CAST")
     override fun getValue(thisRef: Any?, property: KProperty<*>): T {

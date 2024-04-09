@@ -2,26 +2,29 @@ package ru.hollowhorizon.hollowengine.client.screen
 
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
+import it.unimi.dsi.fastutil.ints.IntLists
+import net.minecraft.client.Minecraft
+import net.minecraft.world.entity.vehicle.Minecart
 import ru.hollowhorizon.hc.api.IAutoScaled
 import ru.hollowhorizon.hc.client.screens.HollowScreen
 import ru.hollowhorizon.hc.client.screens.widget.HollowWidget
 import ru.hollowhorizon.hc.client.screens.widget.layout.PlacementType
 import ru.hollowhorizon.hc.client.screens.widget.layout.box
 import ru.hollowhorizon.hc.client.utils.drawScaled
+import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.mcText
 import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hc.common.ui.Alignment
 import ru.hollowhorizon.hc.common.ui.Anchor
 import ru.hollowhorizon.hollowengine.HollowEngine
+import ru.hollowhorizon.hollowengine.common.capabilities.PlayerStoryCapability
 
 class ProgressManagerScreen : HollowScreen("Progress Manager".mcText), IAutoScaled {
 
     override fun init() {
         super.init()
 
-        val messages = FTBTeamsAPI.getClientManager().selfTeam.extraData.getList("hollowengine_progress_tasks", 8)
-            .map { it.asString }
+        val messages = Minecraft.getInstance().player?.get(PlayerStoryCapability::class)?.quests ?: return
 
         box {
             size = 100.pc x 100.pc

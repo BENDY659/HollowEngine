@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component
 import ru.hollowhorizon.hollowengine.common.events.StoryHandler
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager.fromReadablePath
 import ru.hollowhorizon.hollowengine.common.scripting.StoryLogger
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.scripting.story.runScript
@@ -25,12 +26,12 @@ open class SimpleNode(val task: SimpleNode.() -> Unit) : Node() {
 fun IContextBuilder.next(block: SimpleNode.() -> Unit) = +SimpleNode(block)
 
 fun IContextBuilder.send(text: Component) = +SimpleNode {
-    manager.team.onlineMembers.forEach { it.sendSystemMessage(text) }
+    manager.server.playerList.players.forEach { it.sendSystemMessage(text) }
 }
 
 fun IContextBuilder.startScript(text: () -> String) = next {
     val file = text().fromReadablePath()
-    if (!file.exists()) manager.team.onlineMembers.forEach {
+    if (!file.exists()) manager.server.playerList.players.forEach {
         it.sendSystemMessage(
             Component.translatable(
                 "hollowengine.scripting.story.script_not_found",
@@ -39,17 +40,16 @@ fun IContextBuilder.startScript(text: () -> String) = next {
         )
     }
 
-    runScript(manager.server, manager.team, file)
+    runScript(manager.server, file)
 }
 
 fun IContextBuilder.stopScript(file: () -> String) = next {
-    StoryHandler.stopEvent(this@stopScript.stateMachine.team, file())
+    StoryHandler.stopEvent(file())
 }
 
 fun IContextBuilder.restartScript() = next {
-    val team = this@restartScript.stateMachine.team
-    StoryHandler.getEventByScript(team, this@restartScript.stateMachine)?.let {
-        StoryHandler.restartEvent(team, it)
+    StoryHandler.getEventByScript(this@restartScript.stateMachine)?.let {
+        StoryHandler.restartEvent(it)
     }
 }
 

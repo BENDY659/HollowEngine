@@ -8,6 +8,7 @@ import ru.hollowhorizon.hc.client.screens.ClosedGuiEvent
 import ru.hollowhorizon.hc.common.ui.CURRENT_SERVER_GUI
 import ru.hollowhorizon.hc.common.ui.OpenGuiPacket
 import ru.hollowhorizon.hc.common.ui.Widget
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 
@@ -20,7 +21,7 @@ class GuiNode(gui: Widget.() -> Unit) : Node() {
     override fun tick(): Boolean {
         if (!isStarted) {
             CURRENT_SERVER_GUI = gui
-            manager.team.onlineMembers.forEach {
+            manager.server.playerList.players.forEach {
                 OpenGuiPacket(gui).send(PacketDistributor.PLAYER.with { it })
             }
             isStarted = true
@@ -32,7 +33,7 @@ class GuiNode(gui: Widget.() -> Unit) : Node() {
 
     @SubscribeEvent
     fun onEvent(event: ClosedGuiEvent) {
-        isEnded = event.entity in manager.team.onlineMembers
+        isEnded = event.entity in manager.server.playerList.players
     }
 
     override fun serializeNBT() = CompoundTag().apply {

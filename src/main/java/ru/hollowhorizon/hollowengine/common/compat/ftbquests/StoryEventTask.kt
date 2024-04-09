@@ -6,7 +6,6 @@ import dev.ftb.mods.ftbquests.quest.Quest
 import dev.ftb.mods.ftbquests.quest.TeamData
 import dev.ftb.mods.ftbquests.quest.task.Task
 import dev.ftb.mods.ftbquests.quest.task.TaskType
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.server.level.ServerPlayer
@@ -66,12 +65,11 @@ class StoryEventTask(quest: Quest) : Task(quest) {
 
     override fun submitTask(teamData: TeamData, player: ServerPlayer, craftedItem: ItemStack) {
         if (teamData.isCompleted(this)) return
-        val team = FTBTeamsAPI.getManager().getTeamByID(teamData.uuid) ?: return
 
-        val hasEvent = StoryHandler.getActiveEvents(team).contains(storyEventName)
+        val hasEvent = StoryHandler.getActiveEvents().contains(storyEventName)
 
         if(!lastCheckExists && !hasEvent) {
-            runScript(ServerLifecycleHooks.getCurrentServer(), team, storyEventName.fromReadablePath())
+            runScript(ServerLifecycleHooks.getCurrentServer(), storyEventName.fromReadablePath())
         }
 
         teamData.setProgress(this, if(!hasEvent && lastCheckExists) 1L else 0L)
@@ -81,15 +79,12 @@ class StoryEventTask(quest: Quest) : Task(quest) {
 
     override fun onStarted(data: QuestProgressEventData<*>) {
         super.onStarted(data)
-        val team = FTBTeamsAPI.getManager().getTeamByID(data.teamData.uuid) ?: return
 
 
     }
 
     override fun formatProgress(teamData: TeamData, progress: Long): String {
-        val team = FTBTeamsAPI.getManager().getTeamByID(teamData.uuid) ?: return "???"
-        val event = StoryHandler.getEventByName(team, storyEventName) ?: return "???"
-        val realProgress = (event.currentIndex / event.nodes.size.toFloat()) * 100f
-        return realProgress.toInt().toString() + "%"
+
+        return TODO("Починить интеграцию с FTB Quests")
     }
 }

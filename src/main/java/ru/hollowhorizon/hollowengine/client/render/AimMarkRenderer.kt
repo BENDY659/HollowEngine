@@ -2,23 +2,19 @@ package ru.hollowhorizon.hollowengine.client.render
 
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.Tesselator
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
-import dev.ftb.mods.ftbteams.data.ClientTeamManager
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.renderer.MultiBufferSource
-import net.minecraft.core.Position
 import net.minecraft.locale.Language
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.client.event.RenderLevelStageEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import ru.hollowhorizon.hc.client.utils.capability
+import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.mc
 import ru.hollowhorizon.hc.client.utils.use
-import ru.hollowhorizon.hollowengine.common.capabilities.StoryTeamCapability
+import ru.hollowhorizon.hollowengine.common.capabilities.PlayerStoryCapability
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs.distanceToXZ
 import kotlin.math.sqrt
 
@@ -27,11 +23,10 @@ object AimMarkRenderer {
     @SubscribeEvent
     fun renderWorldLast(event: RenderLevelStageEvent) {
         if (event.stage == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
-            val team = ClientTeamManager.INSTANCE?.selfTeam ?: return
             val player = Minecraft.getInstance().player ?: return
             val stack = event.poseStack
 
-            val marks = team.capability(StoryTeamCapability::class).aimMarks
+            val marks = player[PlayerStoryCapability::class].aimMarks
 
             marks.forEach { mark ->
                 stack.use {

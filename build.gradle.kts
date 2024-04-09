@@ -41,6 +41,8 @@ val hcVersion: String by project
 val forgeVersion: String by project
 val kffVersion: String by project
 val ksffVersion: String by project
+val bookshelfVersion: String by project
+val stagesVersion: String by project
 
 group = "ru.hollowhorizon"
 version = "${mcVersion}-$modVersion"
@@ -93,6 +95,7 @@ repositories {
     maven("https://jitpack.io")
     maven("https://thedarkcolour.github.io/KotlinForForge/")
     maven("https://cursemaven.com")
+    maven("https://maven.blamejared.com")
     flatDir {
         dir("hc")
         dir("libs")
@@ -114,16 +117,17 @@ dependencies {
     implementation("com.github.SrRapero720.watermedia:build:2.0.28")
     implementation(fg.deobf("ru.hollowhorizon:kotlinscript:${ksffVersion}"))
     implementation(fg.deobf("ru.hollowhorizon:hc:${mcVersion}-${hcVersion}"))
-    implementation(fg.deobf("curse.maven:ftb-teams-forge-404468:4611938"))
-    implementation(fg.deobf("curse.maven:ftb-library-forge-404465:4661834"))
-    implementation(fg.deobf("curse.maven:architectury-api-419699:4555749"))
     implementation(fg.deobf("curse.maven:jei-238222:4712866"))
     implementation(fg.deobf("curse.maven:wthit-forge-455982:4819215"))
     implementation(fg.deobf("curse.maven:badpackets-615134:4784364"))
     implementation(fg.deobf("curse.maven:embeddium-908741:4984830"))
     implementation(fg.deobf("curse.maven:oculus-581495:4763262"))
     implementation(fg.deobf("curse.maven:spark-361579:4505309"))
-    implementation(fg.deobf("curse.maven:item-filters-309674:4553326"))
+
+    implementation(fg.deobf("net.darkhax.bookshelf:Bookshelf-Forge-$mcVersion:$bookshelfVersion"))
+    implementation(fg.deobf("net.darkhax.gamestages:GameStages-Forge-$mcVersion:$stagesVersion"))
+
+    compileOnly(fg.deobf("curse.maven:ftb-library-forge-404465:4661834"))
     compileOnly(fg.deobf("curse.maven:ftb-quests-forge-289412:5060506"))
 
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")

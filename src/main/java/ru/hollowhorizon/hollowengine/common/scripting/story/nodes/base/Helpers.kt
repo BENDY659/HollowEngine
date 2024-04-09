@@ -27,6 +27,7 @@ open class NodeContextBuilder(override val stateMachine: StoryStateMachine) : IC
 
     override operator fun <T: Node> T.unaryPlus(): T {
         this.manager = stateMachine
+        this.init()
         if(manager.isStarted) {
             StoryLogger.LOGGER.fatal("It is not possible to add a ${this.javaClass.simpleName} action after running the script! You may have forgotten to write `IContextBuilder.` before the name of your function? Or you just add action in other action?!")
             throw IllegalStateException("It is not possible to add a ${this.javaClass.simpleName} action after running the script! You may have forgotten to write `IContextBuilder.` before the name of your function? Or you just add action in other action?!")

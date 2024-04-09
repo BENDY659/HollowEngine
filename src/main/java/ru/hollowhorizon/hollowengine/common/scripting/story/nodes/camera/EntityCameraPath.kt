@@ -1,11 +1,12 @@
 package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.camera
 
-import dev.ftb.mods.ftbteams.data.Team
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.minecraft.client.Minecraft
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.client.event.ViewportEvent
 import net.minecraftforge.common.MinecraftForge
@@ -14,7 +15,6 @@ import ru.hollowhorizon.hc.api.utils.Polymorphic
 import ru.hollowhorizon.hc.client.handlers.TickHandler
 import ru.hollowhorizon.hc.client.utils.nbt.ForEntity
 import ru.hollowhorizon.hc.client.utils.nbt.ForVec3
-import ru.hollowhorizon.hollowengine.common.scripting.forEachPlayer
 import ru.hollowhorizon.hollowengine.mixins.CameraInvoker
 import kotlin.math.sqrt
 
@@ -23,17 +23,18 @@ import kotlin.math.sqrt
 class EntityCameraPath(
     override val maxTime: Int,
     val pos: @Serializable(ForVec3::class) Vec3,
-    val entity: @Serializable(with = ForEntity::class) Entity
+    val entity: @Serializable(with = ForEntity::class) Entity,
 ) : ICameraPath {
     @Transient
     var startTime = TickHandler.currentTicks()
-    override fun serverUpdate(team: Team) {
-        team.forEachPlayer { team.forEachPlayer { it.moveTo(pos.x, pos.y, pos.z) } }
+    override fun serverUpdate(players: List<Player>) {
+        players.forEach { it.moveTo(pos.x, pos.y, pos.z) }
     }
 
-    override fun onStartServer(team: Team) {
-        team.forEachPlayer { team.forEachPlayer { it.moveTo(pos.x, pos.y, pos.z) } }
-        super.onStartServer(team)
+
+    override fun onStartServer(players: List<ServerPlayer>) {
+        players.forEach { it.moveTo(pos.x, pos.y, pos.z) }
+        super.onStartServer(players)
     }
 
     override fun reset() {

@@ -5,6 +5,7 @@ import net.minecraft.network.protocol.game.ClientboundStopSoundPacket
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.phys.Vec3
 import ru.hollowhorizon.hc.client.utils.rl
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 
 class SoundContainer {
@@ -16,7 +17,7 @@ class SoundContainer {
 
 fun IContextBuilder.playSound(sound: SoundContainer.() -> Unit) = +SimpleNode {
     val container = SoundContainer().apply(sound)
-    stateMachine.team.onlineMembers.forEach {
+    stateMachine.server.playerList.players.forEach {
         it.connection.send(
             ClientboundCustomSoundPacket(
                 container.sound.rl,
@@ -31,7 +32,7 @@ fun IContextBuilder.playSound(sound: SoundContainer.() -> Unit) = +SimpleNode {
 }
 
 fun IContextBuilder.stopSound(sound: () -> String) = +SimpleNode {
-    stateMachine.team.onlineMembers.forEach {
+    stateMachine.server.playerList.players.forEach {
         it.connection.send(
             ClientboundStopSoundPacket(
                 sound().rl,
