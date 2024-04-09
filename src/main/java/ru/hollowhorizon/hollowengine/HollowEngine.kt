@@ -46,7 +46,7 @@ class HollowEngine {
         MOD_BUS = thedarkcolour.kotlinforforge.forge.MOD_BUS
         getModScripts().forEach(::runModScript)
 
-        if(ModList.get().isLoaded("ftbquests")) FTBQuestsSupport
+        if (ModList.get().isLoaded("ftbquests")) FTBQuestsSupport
 
         val forgeBus = MinecraftForge.EVENT_BUS
         HollowCore.LOGGER.info("HollowEngine mod loading...")
@@ -67,9 +67,8 @@ class HollowEngine {
             MOD_BUS.register(ModShaders)
         }
 
-        if (FTB_INSTALLED) {
-            StoryEngineSetup.init()
-        }
+        StoryEngineSetup.init()
+
 
         MOD_BUS.addListener(this::registerPacks)
 
@@ -118,14 +117,12 @@ class HollowEngine {
     private fun registerCommands(event: RegisterCommandsEvent) {
         HECommands.register(event.dispatcher)
 
-        if (FTB_INSTALLED)
-            HEStoryCommands.register(event.dispatcher)
+        HEStoryCommands.register(event.dispatcher)
     }
 
     companion object {
         const val MODID = "hollowengine"
         lateinit var MOD_BUS: IEventBus
         var isLoading = true
-        val FTB_INSTALLED = ModList.get().isLoaded("ftbteams")
     }
 }

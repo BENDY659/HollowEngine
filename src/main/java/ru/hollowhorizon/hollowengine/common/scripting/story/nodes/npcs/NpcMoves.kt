@@ -1,11 +1,8 @@
 package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs
 
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
-import dev.ftb.mods.ftbteams.data.Team
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec3
-import ru.hollowhorizon.hc.HollowCore
 import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import kotlin.math.abs
@@ -71,14 +68,14 @@ class NpcMoveToEntityNode(val npc: NPCProperty, var target: () -> Entity?) : Nod
     }
 }
 
-class NpcMoveToTeamNode(val npc: NPCProperty, var target: () -> Team?) : Node() {
+class NpcMoveToGroupNode(val npc: NPCProperty, var target: () -> List<Entity>) : Node() {
 
     override fun tick(): Boolean {
         if (!npc.isLoaded) return true
-        val npc = npc()!!
-        val navigator = npc.navigation
+        val npc = npc()
 
-        val entity = target()?.onlineMembers?.minByOrNull { it.distanceToSqr(npc) } ?: return true
+        val navigator = npc.navigation
+        val entity = target().minByOrNull { it.distanceTo(npc) } ?: return true
 
         navigator.moveTo(entity, 1.0)
 
@@ -89,15 +86,9 @@ class NpcMoveToTeamNode(val npc: NPCProperty, var target: () -> Team?) : Node() 
         return dist || abs(npc.y - entity.y) > 3
     }
 
-    override fun serializeNBT() = CompoundTag().apply {
-        val team = target() ?: return@apply
-        putUUID("team", team.id)
-    }
-
+    override fun serializeNBT() = CompoundTag()
     override fun deserializeNBT(nbt: CompoundTag) {
-        val team = FTBTeamsAPI.getManager().getTeamByID(nbt.getUUID("team"))
-        if (team == null) HollowCore.LOGGER.warn("Team ${nbt.getUUID("team")} not found!")
-        target = { team }
+        // Nothing to deserialize
     }
 }
 

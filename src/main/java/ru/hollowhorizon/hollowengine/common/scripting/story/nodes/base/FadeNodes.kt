@@ -2,6 +2,7 @@ package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base
 
 import net.minecraftforge.network.PacketDistributor
 import ru.hollowhorizon.hollowengine.client.screen.FadeOverlayScreenPacket
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 
 open class FadeContainer {
@@ -15,7 +16,7 @@ open class FadeContainer {
 fun IContextBuilder.fadeInOut(block: FadeContainer.() -> Unit) {
     +WaitNode {
         val container = FadeContainer().apply(block)
-        stateMachine.team.onlineMembers.forEach {
+        stateMachine.server.playerList.players.forEach {
             FadeOverlayScreenPacket(
                 true,
                 container.text,
@@ -29,7 +30,7 @@ fun IContextBuilder.fadeInOut(block: FadeContainer.() -> Unit) {
     }
     +WaitNode {
         val container = FadeContainer().apply(block)
-        stateMachine.team.onlineMembers.forEach {
+        stateMachine.server.playerList.players.forEach {
             FadeOverlayScreenPacket(
                 false,
                 container.text,
@@ -45,7 +46,7 @@ fun IContextBuilder.fadeInOut(block: FadeContainer.() -> Unit) {
 
 fun IContextBuilder.fadeIn(block: FadeContainer.() -> Unit) = +WaitNode {
     val container = FadeContainer().apply(block)
-    stateMachine.team.onlineMembers.forEach {
+    stateMachine.server.playerList.players.forEach {
         FadeOverlayScreenPacket(
             true,
             container.text,
@@ -60,7 +61,7 @@ fun IContextBuilder.fadeIn(block: FadeContainer.() -> Unit) = +WaitNode {
 
 fun IContextBuilder.fadeOut(block: FadeContainer.() -> Unit) = +WaitNode {
     val container = FadeContainer().apply(block)
-    stateMachine.team.onlineMembers.forEach {
+    stateMachine.server.playerList.players.forEach {
         FadeOverlayScreenPacket(
             false,
             container.text,

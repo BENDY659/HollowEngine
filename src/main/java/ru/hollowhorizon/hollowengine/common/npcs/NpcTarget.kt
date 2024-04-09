@@ -1,8 +1,5 @@
 package ru.hollowhorizon.hollowengine.common.npcs
 
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
-import dev.ftb.mods.ftbteams.data.Team
-import net.minecraft.commands.arguments.EntityAnchorArgument
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel
@@ -15,11 +12,9 @@ import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
     var movingPos: Vec3? = null
     var movingEntity: Entity? = null
-    var movingTeam: Team? = null
 
     var lookingPos: Vec3? = null
     var lookingEntity: Entity? = null
-    var lookingTeam: Team? = null
 
     fun tick(entity: NPCEntity) {
         if (movingPos != null) {
@@ -33,15 +28,7 @@ class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
             entity.lookControl.setLookAt(eyes.x, eyes.y, eyes.z, 10f, 30f)
         }
 
-        if (this.movingTeam != null) {
-            val nearest = this.movingTeam!!.onlineMembers!!.minByOrNull { it.distanceToSqr(entity) } ?: return
-            entity.navigation.moveTo(nearest, 1.0)
-        }
-        if (this.lookingTeam != null) {
-            val nearest = this.lookingTeam!!.onlineMembers!!.minByOrNull { it.distanceToSqr(entity) } ?: return
-            val eyes = nearest.eyePosition
-            entity.lookControl.setLookAt(eyes.x, eyes.y, eyes.z, 10f, 30f)
-        }
+
     }
 
     override fun serializeNBT() = CompoundTag().apply {
@@ -51,7 +38,6 @@ class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
             putDouble("mpos_z", movingPos!!.z)
         }
         if (movingEntity != null) putUUID("mentity", movingEntity!!.uuid)
-        if (movingTeam != null) putUUID("mteam", movingTeam!!.id)
 
         if (lookingPos != null) {
             putDouble("lpos_x", lookingPos!!.x)
@@ -59,7 +45,6 @@ class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
             putDouble("lpos_z", lookingPos!!.z)
         }
         if (lookingEntity != null) putUUID("lentity", lookingEntity!!.uuid)
-        if (lookingTeam != null) putUUID("lteam", lookingTeam!!.id)
     }
 
     override fun deserializeNBT(nbt: CompoundTag) {
@@ -74,12 +59,6 @@ class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
             val level = level as? ServerLevel ?: return
             movingEntity = level.getEntity(nbt.getUUID("mentity"))
         }
-        if (nbt.contains("mteam")) {
-            val teamId = nbt.getUUID("mteam")
-            FTBTeamsAPI.getManager().getTeamByID(teamId)?.let {
-                movingTeam = it
-            }
-        }
 
         if (nbt.contains("lpos_x")) {
             lookingPos = Vec3(
@@ -91,12 +70,6 @@ class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
         if (nbt.contains("lentity")) {
             val level = level as? ServerLevel ?: return
             lookingEntity = level.getEntity(nbt.getUUID("lentity"))
-        }
-        if (nbt.contains("lteam")) {
-            val teamId = nbt.getUUID("lteam")
-            FTBTeamsAPI.getManager().getTeamByID(teamId)?.let {
-                lookingTeam = it
-            }
         }
     }
 

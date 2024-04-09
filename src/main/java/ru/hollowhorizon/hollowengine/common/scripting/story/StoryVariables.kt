@@ -35,7 +35,7 @@ open class StoryVariable<T : Any>(var value: () -> T, val clazz: Class<T>, val m
 class GlobalProperty<T : Any>(val value: () -> T, val clazz: Class<T>, val manager: StoryStateMachine) :
     ReadWriteProperty<Any?, T> {
     override fun getValue(thisRef: Any?, property: KProperty<*>): T {
-        val extra = manager.team.extraData["hollowengine_global_properties"] as? CompoundTag
+        val extra = manager.extra["hollowengine_global_properties"] as? CompoundTag
         val variable = extra?.get(property.name)
         return if (variable != null) {
             NBTFormat.deserializeNoInline(variable, clazz)
@@ -45,11 +45,10 @@ class GlobalProperty<T : Any>(val value: () -> T, val clazz: Class<T>, val manag
     }
 
     override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-        val extra = (manager.team.extraData["hollowengine_global_properties"] as? CompoundTag) ?: CompoundTag().apply {
-            manager.team.extraData.put("hollowengine_global_properties", this)
+        val extra = (manager.extra["hollowengine_global_properties"] as? CompoundTag) ?: CompoundTag().apply {
+            manager.extra.put("hollowengine_global_properties", this)
         }
         extra.put(property.name, NBTFormat.serializeNoInline(value, clazz))
-        manager.team.save()
     }
 
 }

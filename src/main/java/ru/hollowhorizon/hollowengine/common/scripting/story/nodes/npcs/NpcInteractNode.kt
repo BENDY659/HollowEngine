@@ -3,6 +3,7 @@ package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs
 import net.minecraft.nbt.CompoundTag
 import ru.hollowhorizon.hollowengine.client.screen.overlays.DrawMousePacket
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 
 class NpcInteractNode(val npc: NPCProperty) : Node() {
@@ -14,13 +15,13 @@ class NpcInteractNode(val npc: NPCProperty) : Node() {
 
         if (!isStarted) {
             isStarted = true
-            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.team.onlineMembers.toTypedArray())
+            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.server.playerList.players.toTypedArray())
             npc()!!.onInteract = { player ->
                 hasInteracted = true
             }
         }
         if (hasInteracted) {
-            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
+            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
             npc()!!.onInteract = NPCEntity.EMPTY_INTERACT
         }
         return !hasInteracted

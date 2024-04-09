@@ -3,13 +3,14 @@ package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.camera
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.*
 import com.mojang.math.Vector3f
-import dev.ftb.mods.ftbteams.data.Team
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.renderer.GameRenderer
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.Mth
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.client.event.RenderGuiOverlayEvent
 import net.minecraftforge.client.event.ViewportEvent
@@ -26,7 +27,6 @@ import ru.hollowhorizon.hc.client.utils.mc
 import ru.hollowhorizon.hollowengine.client.camera.CameraHandler
 import ru.hollowhorizon.hollowengine.client.camera.CameraPath
 import ru.hollowhorizon.hollowengine.common.registry.ModItems
-import ru.hollowhorizon.hollowengine.common.scripting.forEachPlayer
 import ru.hollowhorizon.hollowengine.mixins.CameraInvoker
 
 @Serializable
@@ -51,14 +51,14 @@ class CurveCameraPath(
         startTime = TickHandler.currentTicks()
     }
 
-    override fun serverUpdate(team: Team) {
+    override fun serverUpdate(players: List<Player>) {
         val time = TickHandler.currentTicks() - startTime
         spline.getPoint(interpolation(time / maxTime.toFloat()).toDouble()).apply {
             if (this.x.isNaN() || this.y.isNaN() || this.z.isNaN()) {
                 HollowCore.LOGGER.warn("NaN in spline: {}, {}, {}", x, y, z)
                 return
             }
-            team.forEachPlayer {
+            players.forEach {
                 it.moveTo(this.x, this.y, this.z)
             }
         }

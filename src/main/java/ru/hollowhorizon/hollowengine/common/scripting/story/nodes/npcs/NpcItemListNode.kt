@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack
 import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hollowengine.client.screen.overlays.DrawMousePacket
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 
@@ -28,7 +29,7 @@ class ItemListNode(itemList: GiveItemList.() -> Unit) : Node() {
     override fun tick(): Boolean {
         var hasItems = false
 
-        manager.team.onlineMembers.forEach { member ->
+        manager.server.playerList.players.forEach { member ->
             hasItems = hasItems ||
                     itemList.items.all { item ->
                         member.inventory.items.any { it.isItemStackEqual(item) }
@@ -70,7 +71,7 @@ class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: NPCProperty) :
                 }
                 itemList.items.any { entityItem.item == it.item }
             }
-            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.team.onlineMembers.toTypedArray())
+            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.server.playerList.players.toTypedArray())
             npc.onInteract = { player ->
                 player.sendSystemMessage(itemList.text.mcTranslate)
                 itemList.items.forEach {
@@ -80,7 +81,7 @@ class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: NPCProperty) :
         }
         val hasItems = itemList.items.isNotEmpty()
         if (!hasItems) {
-            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
+            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
             npc.shouldGetItem = { false }
             npc.onInteract = NPCEntity.EMPTY_INTERACT
         }

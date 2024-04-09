@@ -2,17 +2,16 @@ package ru.hollowhorizon.hollowengine.common.commands
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.network.chat.Component
 import net.minecraftforge.network.PacketDistributor
 import ru.hollowhorizon.hc.HollowCore
-import ru.hollowhorizon.hc.client.utils.capability
+import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.common.commands.arg
 import ru.hollowhorizon.hc.common.commands.register
 import ru.hollowhorizon.hollowengine.client.utils.roundTo
-import ru.hollowhorizon.hollowengine.common.capabilities.StoryTeamCapability
+import ru.hollowhorizon.hollowengine.common.capabilities.PlayerStoryCapability
 import ru.hollowhorizon.hollowengine.common.events.StoryHandler
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager.fromReadablePath
@@ -40,8 +39,7 @@ object HEStoryCommands {
                     val raw = StringArgumentType.getString(this, "script")
                     val script = raw.fromReadablePath()
                     players.forEach { player ->
-                        val storyTeam = FTBTeamsAPI.getPlayerTeam(player)
-                        runScript(player.server, storyTeam, script, true)
+                        runScript(player.server, script, true)
                     }
                     HollowCore.LOGGER.info("Started script $script")
                 }
@@ -53,23 +51,20 @@ object HEStoryCommands {
                     val players = EntityArgument.getPlayers(this, "players")
                     val eventPath = StringArgumentType.getString(this, "script")
                     players.forEach {
-                        val storyTeam = FTBTeamsAPI.getPlayerTeam(it)
-                        StoryHandler.stopEvent(storyTeam, eventPath)
+                        StoryHandler.stopEvent(eventPath)
                     }
                 }
 
                 "clear-marks" {
                     val player = source.playerOrException
-                    val storyTeam = FTBTeamsAPI.getPlayerTeam(player)
 
-                    storyTeam.capability(StoryTeamCapability::class).aimMarks.clear()
+                    player[PlayerStoryCapability::class].aimMarks.clear()
                 }
 
                 "active-events" {
                     val player = source.playerOrException
-                    val storyTeam = FTBTeamsAPI.getPlayerTeam(player)
                     player.sendSystemMessage(Component.translatable("hollowengine.commands.active_events"))
-                    StoryHandler.getActiveEvents(storyTeam)
+                    StoryHandler.getActiveEvents()
                         .ifEmpty{ mutableListOf("No active events") }
                         .forEach(
                             Consumer { name: String ->

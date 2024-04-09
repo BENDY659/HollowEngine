@@ -1,6 +1,5 @@
 package ru.hollowhorizon.hollowengine.common.events
 
-import dev.ftb.mods.ftbteams.event.TeamEvent
 import net.minecraft.world.entity.Mob
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraftforge.client.event.EntityRenderersEvent
@@ -32,7 +31,6 @@ object StoryEngineSetup {
         ModDimensions.CHUNK_GENERATORS.register(MOD_BUS)
         ModDimensions.DIMENSIONS.register(MOD_BUS)
 
-        TeamEvent.LOADED.register(StoryHandler::onTeamLoaded)
         ModUtil.updateModNames()
     }
 

@@ -2,7 +2,6 @@
 
 package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.dialogues
 
-import dev.ftb.mods.ftbteams.data.Team
 import kotlinx.serialization.Serializable
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.chat.Component
@@ -14,7 +13,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.network.PacketDistributor
 import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.mcText
-import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hc.client.utils.open
 import ru.hollowhorizon.hc.common.network.HollowPacketV2
 import ru.hollowhorizon.hc.common.network.HollowPacketV3
@@ -27,8 +25,7 @@ import ru.hollowhorizon.hollowengine.common.network.MouseButton
 import ru.hollowhorizon.hollowengine.common.network.ServerMouseClickedEvent
 import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 import ru.hollowhorizon.hollowengine.common.npcs.NpcIcon
-import ru.hollowhorizon.hollowengine.common.scripting.forEachPlayer
-import ru.hollowhorizon.hollowengine.common.scripting.ownerPlayer
+import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.StoryStateMachine
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.HasInnerNodes
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
@@ -55,7 +52,8 @@ class DialogueScreenPacket(private val enable: Boolean, private val canClose: Bo
 
 @HollowPacketV2(HollowPacketV2.Direction.TO_CLIENT)
 @Serializable
-class UpdateDialoguePacket(private val options: DialogueOptions = SERVER_OPTIONS) : HollowPacketV3<UpdateDialoguePacket> {
+class UpdateDialoguePacket(private val options: DialogueOptions = SERVER_OPTIONS) :
+    HollowPacketV3<UpdateDialoguePacket> {
     override fun handle(player: Player, data: UpdateDialoguePacket) {
         CLIENT_OPTIONS = options
     }
@@ -72,7 +70,7 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
 
     override fun tick(): Boolean {
         if (!isStarted) {
-            if(onStart()) isStarted = true
+            if (onStart()) isStarted = true
             return true
         }
 
@@ -88,7 +86,7 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
             npc.let {
                 val entity = it()!!
                 entity[NPCCapability::class].icon = NpcIcon.EMPTY
-                DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
+                DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
                 entity.onInteract = NPCEntity.EMPTY_INTERACT
             }
         }
@@ -97,22 +95,22 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
     }
 
     private fun onStart(): Boolean {
-        if(npc?.isLoaded == false) return false
+        if (npc?.isLoaded == false) return false
 
         SERVER_OPTIONS = DialogueOptions()
         npc?.let {
             val entity = it()!!
             entity[NPCCapability::class].icon = NpcIcon.DIALOGUE
-            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.team.onlineMembers.toTypedArray())
+            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.server.playerList.players.toTypedArray())
             entity.onInteract = {
-                if (it is ServerPlayer && it in manager.team.onlineMembers) {
+                if (it is ServerPlayer && it in manager.server.playerList.players) {
                     DialogueScreenPacket(true, canClose = true).send(PacketDistributor.PLAYER.with { it })
                 }
                 MinecraftForge.EVENT_BUS.post(ServerMouseClickedEvent(it, MouseButton.LEFT))
             }
         }
         if (npc == null) {
-            manager.team.onlineMembers.forEach {
+            manager.server.playerList.players.forEach {
                 DialogueScreenPacket(true, canClose = false).send(PacketDistributor.PLAYER.with { it })
             }
         }
@@ -120,16 +118,16 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
     }
 
     private fun onEnd(): Boolean {
-        manager.team.onlineMembers.forEach {
+        manager.server.playerList.players.forEach {
             DialogueScreenPacket(false, npc != null).send(PacketDistributor.PLAYER.with { it })
         }
 
         //Если нпс ещё не прогрузился, то ждём
-        if(npc?.isLoaded == false) return true
+        if (npc?.isLoaded == false) return true
         npc?.let {
             val entity = it()!!
             entity[NPCCapability::class].icon = NpcIcon.EMPTY
-            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.team.onlineMembers.toTypedArray())
+            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
             entity.onInteract = NPCEntity.EMPTY_INTERACT
         }
         return false
@@ -154,29 +152,28 @@ class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine)
     var dialogueNpc: NPCProperty? = null
 
     override fun NPCProperty.sayComponent(text: () -> Component): SimpleNode {
-        waitLoading()
         if (action == ChoiceAction.WORLD) {
             return next {
                 val component =
-                    Component.literal("§6[§7" + this@sayComponent()!!.displayName.string + "§6]§7 ").append(text())
-                stateMachine.team.onlineMembers.forEach { it.sendSystemMessage(component) }
+                    Component.literal("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").append(text())
+                stateMachine.server.playerList.players.forEach { it.sendSystemMessage(component) }
             }
         } else {
             +ClickNode(MouseButton.LEFT)
 
             return next {
-                val npc = this@sayComponent()!!
-                SERVER_OPTIONS.update(manager.team) {
+                val npc = this@sayComponent()
+                SERVER_OPTIONS.update(manager.server.playerList.players) {
                     this.text = text()
                     this.name = npc.displayName
-                    if(npc !in characters) characters.add(npc)
+                    if (npc !in characters) characters.add(npc)
                 }
             }
         }
     }
 
     fun options(options: DialogueOptions.() -> Unit) = next {
-        SERVER_OPTIONS.update(manager.team, options)
+        SERVER_OPTIONS.update(manager.server.playerList.players, options)
     }
 
     @JvmName("playerSayComponent")
@@ -185,59 +182,15 @@ class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine)
             return next {
                 val component =
                     Component.literal("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").append(text())
-                stateMachine.team.onlineMembers.forEach { it.sendSystemMessage(component) }
+                stateMachine.server.playerList.players.forEach { it.sendSystemMessage(component) }
             }
         } else {
             val result = +SimpleNode {
                 val player = this@sayComponent()
-                SERVER_OPTIONS.update(manager.team) {
+                SERVER_OPTIONS.update(manager.server.playerList.players) {
                     this.text = text()
                     this.name = player.displayName
-                    if(player !in characters) characters.add(player)
-                }
-            }
-            +ClickNode(MouseButton.LEFT)
-
-            return result
-        }
-    }
-
-    override fun Team.send(text: () -> String): SimpleNode {
-        if (action == ChoiceAction.WORLD) {
-            return next {
-                stateMachine.team.onlineMembers.forEach { it.sendSystemMessage(text().mcTranslate) }
-            }
-        } else {
-            val result = +SimpleNode {
-                SERVER_OPTIONS.update(manager.team) {
-                    this.text = text().mcTranslate
-                    ownerPlayer?.let {
-                        this.name = it.name
-                        if(it !in characters) characters.add(it)
-                    }
-                }
-            }
-            +ClickNode(MouseButton.LEFT)
-
-            return result
-        }
-    }
-
-    override infix fun Team.sendAsPlayer(text: () -> String): SimpleNode {
-        if (action == ChoiceAction.WORLD) {
-            return next {
-                stateMachine.team.onlineMembers.forEach {
-                    it.sendSystemMessage(Component.literal("§6[§7${it.displayName.string}§6]§7 ").append(text().mcTranslate))
-                }
-            }
-        } else {
-            val result = +SimpleNode {
-                SERVER_OPTIONS.update(manager.team) {
-                    this.text = text().mcTranslate
-                    ownerPlayer?.let {
-                        this.name = it.name
-                        if(it !in characters) characters.add(it)
-                    }
+                    if (player !in characters) characters.add(player)
                 }
             }
             +ClickNode(MouseButton.LEFT)
@@ -251,9 +204,9 @@ class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine)
 
 }
 
-private fun DialogueOptions.update(team: Team, function: DialogueOptions.() -> Unit) {
+private fun DialogueOptions.update(players: List<ServerPlayer>, function: DialogueOptions.() -> Unit) {
     this.function()
-    team.forEachPlayer { UpdateDialoguePacket(this).send(PacketDistributor.PLAYER.with { it }) }
+    players.forEach { UpdateDialoguePacket(this).send(PacketDistributor.PLAYER.with { it }) }
 }
 
 enum class ChoiceAction {
@@ -292,28 +245,27 @@ class ChoicesNode(val action: ChoiceAction, choiceContext: DialogueChoiceContext
     }
 
     private fun onTimeoutEnd() {
-        TODO("Not yet implemented")
+        TODO("Реализовать таймаут в диалогах")
     }
 
     @SubscribeEvent
     fun onChoice(event: ApplyChoiceEvent) {
-        if (manager.team.isMember(event.player.uuid)) {
-            performedChoice = choices.values.filterIndexed { index, _ -> index == event.choice }.firstOrNull()
-            performedChoiceIndex = event.choice
-            MinecraftForge.EVENT_BUS.unregister(this)
-            index = 0
+        performedChoice = choices.values.filterIndexed { index, _ -> index == event.choice }.firstOrNull()
+        performedChoiceIndex = event.choice
+        MinecraftForge.EVENT_BUS.unregister(this)
+        index = 0
 
-            if (action == ChoiceAction.WORLD) {
-                manager.team.onlineMembers.forEach {
-                    DialogueScreenPacket(false, true).send(PacketDistributor.PLAYER.with { it })
-                }
-                FORCE_CLOSE = true
+        if (action == ChoiceAction.WORLD) {
+            manager.server.playerList.players.forEach {
+                DialogueScreenPacket(false, true).send(PacketDistributor.PLAYER.with { it })
             }
+            FORCE_CLOSE = true
         }
+
     }
 
     private fun performChoice() {
-        SERVER_OPTIONS.update(manager.team) {
+        SERVER_OPTIONS.update(manager.server.playerList.players) {
             this.choices.clear()
             this.choices.addAll(this@ChoicesNode.choices.keys.map { it.string })
         }

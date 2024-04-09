@@ -1,7 +1,6 @@
 package ru.hollowhorizon.hollowengine.client.gui
 
 import com.mojang.blaze3d.vertex.PoseStack
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
 import imgui.ImGui
 import imgui.flag.ImGuiWindowFlags
 import imgui.type.ImBoolean
@@ -156,7 +155,6 @@ class NPCCreatorPacket(
         entity[AnimatedEntityCapability::class].apply {
             model = this@NPCCreatorPacket.model
         }
-        entity[NPCCapability::class].teamUUID = FTBTeamsAPI.getPlayerTeam(player as ServerPlayer).id.toString()
         entity.moveTo(pos.x, pos.y, pos.z, player.yHeadRot, player.xRot)
 
         entity.isCustomNameVisible = this@NPCCreatorPacket.showName && this@NPCCreatorPacket.name.isNotEmpty()

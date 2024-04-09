@@ -1,6 +1,5 @@
 package ru.hollowhorizon.hollowengine.common.scripting.story
 
-import dev.ftb.mods.ftbteams.data.Team
 import kotlinx.coroutines.*
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
@@ -24,16 +23,16 @@ import kotlin.script.experimental.jvm.loadDependencies
 import kotlin.script.experimental.jvm.util.isError
 
 @OptIn(DelicateCoroutinesApi::class)
-fun runScript(server: MinecraftServer, team: Team, file: File, isCommand: Boolean = false) =
+fun runScript(server: MinecraftServer, file: File, isCommand: Boolean = false) =
     thread {
 
-        StoryLogger.LOGGER.info("Starting event \"{}\", for team \"{}\".", file.toReadablePath(), team.name.string)
+        StoryLogger.LOGGER.info("Starting event \"{}\".", file.toReadablePath())
         val shouldRecompile = ScriptingCompiler.shouldRecompile(file) || isCommand
         val story = ScriptingCompiler.compileFile<StoryScript>(file)
 
         story.errors?.let { errors ->
             errors.forEach { error ->
-                team.onlineMembers.forEach {
+                server.playerList.players.forEach {
                     StoryLogger.LOGGER.error(error.replace("\\r\\n", "\n"))
                     it.sendSystemMessage("§c[ERROR]§r $error".mcText)
                 }
@@ -41,8 +40,9 @@ fun runScript(server: MinecraftServer, team: Team, file: File, isCommand: Boolea
             return@thread
         }
 
+        //TODO: Проверить, не изменился ли код после обновления мода
         val res = story.execute {
-            constructorArgs(server, team)
+            constructorArgs(server)
             jvm {
                 loadDependencies(false)
             }
@@ -53,13 +53,13 @@ fun runScript(server: MinecraftServer, team: Team, file: File, isCommand: Boolea
         when {
             res.isError() -> {
                 (res as ResultWithDiagnostics.Failure).errors().forEach { error ->
-                    team.onlineMembers.forEach { it.sendSystemMessage("§c[ERROR]§r $error".mcText) }
+                    server.playerList.players.forEach { it.sendSystemMessage("§c[ERROR]§r $error".mcText) }
                 }
             }
 
             returnValue is ResultValue.Error -> {
                 val error = returnValue.error
-                team.onlineMembers.forEach {
+                server.playerList.players.forEach {
                     it.sendSystemMessage(Component.translatable("hollowengine.executing_error", file.toReadablePath()))
                     it.sendSystemMessage("${error.message}".mcText)
                     it.sendSystemMessage("hollowengine.check_logs".mcTranslate)

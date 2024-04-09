@@ -13,7 +13,6 @@ import java.util.UUID
 class NPCCapability: CapabilityInstance() {
     var hitboxMode by syncable(HitboxMode.PULLING)
     var icon by syncable(NpcIcon.EMPTY)
-    var teamUUID by syncable(UUID.randomUUID().toString())
 }
 
 @Serializable

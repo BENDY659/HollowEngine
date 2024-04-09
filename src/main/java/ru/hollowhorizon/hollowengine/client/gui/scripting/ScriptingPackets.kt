@@ -1,6 +1,5 @@
 package ru.hollowhorizon.hollowengine.client.gui.scripting
 
-import dev.ftb.mods.ftbteams.FTBTeamsAPI
 import imgui.type.ImBoolean
 import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
@@ -76,9 +75,7 @@ class SaveFilePacket(val path: String, val text: String) : HollowPacketV3<SaveFi
         val file = data.path.fromReadablePath()
         if (file.exists()) {
             file.writeText(data.text)
-            FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
-                UpdateFilePacket(data.path, data.text).send(*it.toTypedArray())
-            }
+            UpdateFilePacket(data.path, data.text).send(*player.server!!.playerList.players.toTypedArray())
         }
     }
 
@@ -91,12 +88,10 @@ class DeleteFilePacket(val path: String) : HollowPacketV3<DeleteFilePacket> {
         if (player.hasPermissions(2)) {
             val file = data.path.fromReadablePath()
             if (file.exists()) {
-                if(file.isDirectory) FileUtils.deleteDirectory(file)
+                if (file.isDirectory) FileUtils.deleteDirectory(file)
                 else file.delete()
                 val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
-                FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
-                    LoadTreePacket(tree).send(player as ServerPlayer)
-                }
+                LoadTreePacket(tree).send(*player.server!!.playerList.players.toTypedArray())
             }
         } else {
             player.sendSystemMessage("You don't have permissions to delete scripts!".mcText)
@@ -113,9 +108,7 @@ class RenameFilePacket(val path: String, val newName: String) : HollowPacketV3<R
             if (file.exists()) {
                 file.renameTo(file.parentFile.resolve(newName))
                 val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
-                FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
-                    LoadTreePacket(tree).send(player as ServerPlayer)
-                }
+                LoadTreePacket(tree).send(*player.server!!.playerList.players.toTypedArray())
             }
         } else {
             player.sendSystemMessage("You don't have permissions to delete scripts!".mcText)
@@ -132,13 +125,12 @@ class CreateFilePacket(val path: String) : HollowPacketV3<CreateFilePacket> {
             if (!file.exists()) {
                 if (!file.parentFile.exists()) file.parentFile.mkdirs()
 
-                if(!file.name.contains(".")) file.mkdirs()
+                if (!file.name.contains(".")) file.mkdirs()
                 else file.createNewFile()
 
                 val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
-                FTBTeamsAPI.getPlayerTeam(player.uuid)?.onlineMembers?.let {
-                    LoadTreePacket(tree).send(player as ServerPlayer)
-                }
+                    LoadTreePacket(tree).send(*player.server!!.playerList.players.toTypedArray())
+
             }
         } else {
             player.sendSystemMessage("You don't have permissions to create scripts!".mcText)
@@ -152,11 +144,10 @@ class RunScriptPacket(val path: String) : HollowPacketV3<RunScriptPacket> {
     override fun handle(player: Player, data: RunScriptPacket) {
 
         if (player.hasPermissions(2)) {
-            val team = FTBTeamsAPI.getPlayerTeam(player.uuid)!!
             val server = player.server!!
             val file = data.path.fromReadablePath()
 
-            runScript(server, team, file, true)
+            runScript(server, file, true)
         } else {
             player.sendSystemMessage("You don't have permissions to run scripts!".mcText)
         }
@@ -168,9 +159,7 @@ class RunScriptPacket(val path: String) : HollowPacketV3<RunScriptPacket> {
 class StopScriptPacket(val path: String) : HollowPacketV3<StopScriptPacket> {
     override fun handle(player: Player, data: StopScriptPacket) {
         if (player.hasPermissions(2)) {
-            val team = FTBTeamsAPI.getPlayerTeam(player.uuid)!!
-
-            StoryHandler.stopEvent(team, path)
+            StoryHandler.stopEvent(path)
         } else {
             player.sendSystemMessage("You don't have permissions to stop scripts!".mcText)
         }
@@ -198,8 +187,10 @@ class ScriptCompiledPacket(val script: String) : HollowPacketV3<ScriptCompiledPa
             if (Minecraft.getInstance().screen is CodeEditorGui) {
                 (Minecraft.getInstance().screen as CodeEditorGui).onClose()
             }
-            player.sendSystemMessage("[HollowEngine] ".mcText.colored(0xEBA434) +
-                    "Скрипт успешно запущен!".mcText.colored(0x34eb34))
+            player.sendSystemMessage(
+                "[HollowEngine] ".mcText.colored(0xEBA434) +
+                        "Скрипт успешно запущен!".mcText.colored(0x34eb34)
+            )
         }
     }
 }
