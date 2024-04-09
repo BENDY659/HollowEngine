@@ -147,9 +147,11 @@ object CodeEditor {
         ImGui.beginTabBar("##Files")
         files.forEach { file ->
             if (ImGui.beginTabItem(file.name, file.open, ImGuiTabItemFlags.None)) {
+                if(currentFile != file.name) {
+                    editor.text = file.code
+                }
                 currentFile = file.name
                 currentPath = file.path
-                editor.text = file.code
                 editor.render("Code Editor")
 
                 if (editor.isTextChanged) {
