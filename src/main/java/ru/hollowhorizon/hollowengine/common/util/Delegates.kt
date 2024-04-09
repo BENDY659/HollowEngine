@@ -1,16 +1,24 @@
 package ru.hollowhorizon.hollowengine.common.util
 
-import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-open class SafeGetter<V>(val property: () -> V) : ReadOnlyProperty<Any?, Safe<V>> {
+open class SafeGetter<V>(val property: () -> V) : ReadWriteProperty<Any?, Safe<V>> {
+    val value = Safe(property)
+
     override fun getValue(thisRef: Any?, property: KProperty<*>): Safe<V> {
-        return Safe(this.property)
+        return value
+    }
+
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: Safe<V>) {
+        this.value.data = value.data
     }
 }
 
-open class Safe<T>(val value: () -> T): () -> T {
-    override operator fun invoke() = value()
+open class Safe<T: Any?>(var data: () -> T?): () -> T {
+    val isLoaded get() = data() != null
+
+    override operator fun invoke(): T = data()!!
 }
 
 fun <T, V : List<T>> SafeGetter<V>.filter(filter: (T) -> Boolean) = SafeGetter { this.property().filter(filter) }

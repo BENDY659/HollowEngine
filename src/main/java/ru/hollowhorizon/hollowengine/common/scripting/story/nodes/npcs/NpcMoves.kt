@@ -4,16 +4,18 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec3
 import ru.hollowhorizon.hc.client.utils.rl
+import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
+import ru.hollowhorizon.hollowengine.common.util.Safe
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-open class NpcMoveToBlockNode(val npc: NPCProperty, var pos: () -> Vec3) : Node() {
+open class NpcMoveToBlockNode(val npc: Safe<NPCEntity>, var pos: () -> Vec3) : Node() {
     val block by lazy { pos() }
 
     override fun tick(): Boolean {
         if (!npc.isLoaded) return true
-        val npc = npc()!!
+        val npc = npc()
 
         val navigator = npc.navigation
 
@@ -37,11 +39,11 @@ open class NpcMoveToBlockNode(val npc: NPCProperty, var pos: () -> Vec3) : Node(
     }
 }
 
-class NpcMoveToEntityNode(val npc: NPCProperty, var target: () -> Entity?) : Node() {
+class NpcMoveToEntityNode(val npc: Safe<NPCEntity>, var target: () -> Entity?) : Node() {
 
     override fun tick(): Boolean {
         if (!npc.isLoaded) return true
-        val npc = npc()!!
+        val npc = npc()
         val navigator = npc.navigation
         val entity = target()
         navigator.moveTo(entity ?: return true, 1.0)
@@ -68,7 +70,7 @@ class NpcMoveToEntityNode(val npc: NPCProperty, var target: () -> Entity?) : Nod
     }
 }
 
-class NpcMoveToGroupNode(val npc: NPCProperty, var target: () -> List<Entity>) : Node() {
+class NpcMoveToGroupNode(val npc: Safe<NPCEntity>, var target: () -> List<Entity>) : Node() {
 
     override fun tick(): Boolean {
         if (!npc.isLoaded) return true

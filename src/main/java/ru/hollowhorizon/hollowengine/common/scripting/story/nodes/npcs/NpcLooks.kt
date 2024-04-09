@@ -4,9 +4,11 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec2
 import net.minecraft.world.phys.Vec3
+import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
+import ru.hollowhorizon.hollowengine.common.util.Safe
 
-class NpcLookToBlockNode(val npc: NPCProperty, var pos: () -> Vec3, var speed: Vec2 = Vec2(10f, 30f)) : Node() {
+class NpcLookToBlockNode(val npc: Safe<NPCEntity>, var pos: () -> Vec3, var speed: Vec2 = Vec2(10f, 30f)) : Node() {
     private var ticks = 30
 
     override fun tick(): Boolean {
@@ -37,7 +39,7 @@ class NpcLookToBlockNode(val npc: NPCProperty, var pos: () -> Vec3, var speed: V
     }
 }
 
-class NpcLookToEntityNode(val npc: NPCProperty, var target: () -> Entity?, var speed: Vec2 = Vec2(10f, 30f)) :
+class NpcLookToEntityNode(val npc: Safe<NPCEntity>, var target: () -> Entity?, var speed: Vec2 = Vec2(10f, 30f)) :
     Node() {
     private var ticks = 30
 
@@ -57,7 +59,7 @@ class NpcLookToEntityNode(val npc: NPCProperty, var target: () -> Entity?, var s
     }
 }
 
-class NpcLookAtGroupNode(val npc: NPCProperty, var target: () -> List<Entity>, var speed: Vec2 = Vec2(10f, 30f)) :
+class NpcLookAtGroupNode(val npc: Safe<NPCEntity>, var target: () -> List<Entity>, var speed: Vec2 = Vec2(10f, 30f)) :
     Node() {
     private var ticks = 30
     override fun tick(): Boolean {

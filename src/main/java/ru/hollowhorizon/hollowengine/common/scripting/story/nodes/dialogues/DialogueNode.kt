@@ -32,8 +32,7 @@ import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilde
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.*
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.events.ClickNode
-import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs.NPCProperty
-import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.players.PlayerProperty
+import ru.hollowhorizon.hollowengine.common.util.Safe
 
 var SERVER_OPTIONS = DialogueOptions()
 
@@ -62,7 +61,7 @@ class UpdateDialoguePacket(private val options: DialogueOptions = SERVER_OPTIONS
 
 var FORCE_CLOSE = false
 
-class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node(), HasInnerNodes {
+class DialogueNode(val nodes: List<Node>, val npc: Safe<NPCEntity>? = null) : Node(), HasInnerNodes {
     private var index = 0
     val isEnded get() = index >= nodes.size
     var isStarted = false
@@ -84,7 +83,7 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
             FORCE_CLOSE = false
 
             npc.let {
-                val entity = it()!!
+                val entity = it()
                 entity[NPCCapability::class].icon = NpcIcon.EMPTY
                 DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
                 entity.onInteract = NPCEntity.EMPTY_INTERACT
@@ -99,7 +98,7 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
 
         SERVER_OPTIONS = DialogueOptions()
         npc?.let {
-            val entity = it()!!
+            val entity = it()
             entity[NPCCapability::class].icon = NpcIcon.DIALOGUE
             DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.server.playerList.players.toTypedArray())
             entity.onInteract = {
@@ -125,7 +124,7 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
         //Если нпс ещё не прогрузился, то ждём
         if (npc?.isLoaded == false) return true
         npc?.let {
-            val entity = it()!!
+            val entity = it()
             entity[NPCCapability::class].icon = NpcIcon.EMPTY
             DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
             entity.onInteract = NPCEntity.EMPTY_INTERACT
@@ -149,9 +148,9 @@ class DialogueNode(val nodes: List<Node>, val npc: NPCProperty? = null) : Node()
 }
 
 class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine) : NodeContextBuilder(stateMachine) {
-    var dialogueNpc: NPCProperty? = null
+    var dialogueNpc: Safe<NPCEntity>? = null
 
-    override fun NPCProperty.sayComponent(text: () -> Component): SimpleNode {
+    override fun Safe<NPCEntity>.sayComponent(text: () -> Component): SimpleNode {
         if (action == ChoiceAction.WORLD) {
             return next {
                 val component =
@@ -177,16 +176,17 @@ class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine)
     }
 
     @JvmName("playerSayComponent")
-    override fun PlayerProperty.sayComponent(text: () -> Component): SimpleNode {
+    override fun Safe<List<ServerPlayer>>.sayComponent(text: () -> Component): SimpleNode {
         if (action == ChoiceAction.WORLD) {
             return next {
+
                 val component =
-                    Component.literal("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").append(text())
+                    Component.literal("§6[§7" + this@sayComponent().random().displayName.string + "§6]§7 ").append(text())
                 stateMachine.server.playerList.players.forEach { it.sendSystemMessage(component) }
             }
         } else {
             val result = +SimpleNode {
-                val player = this@sayComponent()
+                val player = this@sayComponent().random()
                 SERVER_OPTIONS.update(manager.server.playerList.players) {
                     this.text = text()
                     this.name = player.displayName

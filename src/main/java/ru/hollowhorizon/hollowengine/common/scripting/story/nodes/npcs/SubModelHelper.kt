@@ -1,10 +1,12 @@
 package ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs
 
-import net.minecraft.world.entity.Entity
+import net.minecraft.server.level.ServerPlayer
 import ru.hollowhorizon.hc.client.models.gltf.Transform
 import ru.hollowhorizon.hc.client.models.gltf.manager.AnimatedEntityCapability
 import ru.hollowhorizon.hc.client.models.gltf.manager.SubModel
 import ru.hollowhorizon.hc.client.utils.get
+import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
+import ru.hollowhorizon.hollowengine.common.util.Safe
 
 fun subModel(body: SubModel.() -> Unit): SubModel {
     return SubModel(
@@ -13,9 +15,9 @@ fun subModel(body: SubModel.() -> Unit): SubModel {
     ).apply(body)
 }
 
-val NPCProperty.asSubModel: SubModel
+val Safe<NPCEntity>.asSubModel: SubModel
     get() {
-        val npc = this()!!
+        val npc = this()
         val original = npc[AnimatedEntityCapability::class]
         return subModel {
             model = original.model
@@ -26,4 +28,4 @@ val NPCProperty.asSubModel: SubModel
         }
     }
 
-val NPCProperty.subModels get() = this()!![AnimatedEntityCapability::class].subModels
+val Safe<NPCEntity>.subModels get() = this()[AnimatedEntityCapability::class].subModels

@@ -47,7 +47,6 @@ import ru.hollowhorizon.hollowengine.common.scripting.story.StoryStateMachine
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.*
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.events.InputNode
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.npcs.*
-import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.players.PlayerProperty
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.util.AnimationContainer
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.util.NpcContainer
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.util.TeleportContainer
@@ -99,7 +98,7 @@ abstract class IContextBuilder {
         return server.commands.performPrefixedCommand(src, command)
     }
 
-    var NPCProperty.hitboxMode
+    var Safe<NPCEntity>.hitboxMode
         get(): HitboxMode = this()[NPCCapability::class].hitboxMode
         set(value) {
             next {
@@ -107,7 +106,7 @@ abstract class IContextBuilder {
             }
         }
 
-    var NPCProperty.icon
+    var Safe<NPCEntity>.icon
         get(): NpcIcon = this()[NPCCapability::class].icon
         set(value) {
             next {
@@ -115,7 +114,7 @@ abstract class IContextBuilder {
             }
         }
 
-    var NPCProperty.invulnerable
+    var Safe<NPCEntity>.invulnerable
         get() = this().isInvulnerable
         set(value) {
             next {
@@ -123,7 +122,7 @@ abstract class IContextBuilder {
             }
         }
 
-    var NPCProperty.name: String
+    var Safe<NPCEntity>.name: String
         get() = this().displayName.string
         set(value) {
             next {
@@ -133,25 +132,25 @@ abstract class IContextBuilder {
             }
         }
 
-    infix fun NPCProperty.giveLeftHand(item: () -> ItemStack?) {
+    infix fun Safe<NPCEntity>.giveLeftHand(item: () -> ItemStack?) {
         next {
             this@giveLeftHand().setItemInHand(InteractionHand.OFF_HAND, item() ?: ItemStack.EMPTY)
         }
     }
 
-    infix fun NPCProperty.giveRightHand(item: () -> ItemStack?) {
+    infix fun Safe<NPCEntity>.giveRightHand(item: () -> ItemStack?) {
         next {
             this@giveRightHand().setItemInHand(InteractionHand.MAIN_HAND, item() ?: ItemStack.EMPTY)
         }
     }
 
-    infix fun NPCProperty.configure(body: AnimatedEntityCapability.() -> Unit) {
+    infix fun Safe<NPCEntity>.configure(body: AnimatedEntityCapability.() -> Unit) {
         next {
             this@configure()[AnimatedEntityCapability::class].apply(body)
         }
     }
 
-    fun NPCProperty.despawn() {
+    fun Safe<NPCEntity>.despawn() {
         next {
             val npc = this@despawn()
             val activeNpcs = npc.level[StoriesCapability::class].activeNpcs
@@ -160,10 +159,10 @@ abstract class IContextBuilder {
         }
     }
 
-    fun Safe<List<ServerPlayer>>.input(vararg args: String) = +InputNode(*args, players=this@input)
+    fun Safe<List<ServerPlayer>>.input(vararg args: String) = +InputNode(*args, players = this@input)
 
     @Suppress("UNCHECKED_CAST")
-    inline infix fun <reified T> NPCProperty.moveTo(target: NpcTarget<T>) {
+    inline infix fun <reified T> Safe<NPCEntity>.moveTo(target: NpcTarget<T>) {
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> +NpcMoveToBlockNode(this@moveTo, target as NpcTarget<Vec3>)
@@ -177,7 +176,7 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.moveToBiome(biomeName: () -> String) {
+    infix fun Safe<NPCEntity>.moveToBiome(biomeName: () -> String) {
         +NpcMoveToBlockNode(this@moveToBiome) {
             val npc = this@moveToBiome()
             val biome = biomeName().rl
@@ -189,7 +188,7 @@ abstract class IContextBuilder {
         }
     }
 
-    fun NPCProperty.moveToStructure(structureName: () -> String, offset: () -> BlockPos = { BlockPos.ZERO }) {
+    fun Safe<NPCEntity>.moveToStructure(structureName: () -> String, offset: () -> BlockPos = { BlockPos.ZERO }) {
         +NpcMoveToBlockNode(this@moveToStructure) {
             val npc = this@moveToStructure()
             val level = npc.level as ServerLevel
@@ -204,7 +203,7 @@ abstract class IContextBuilder {
         }
     }
 
-    inline infix fun <reified T> NPCProperty.moveAlwaysTo(target: NpcTarget<T>) {
+    inline infix fun <reified T> Safe<NPCEntity>.moveAlwaysTo(target: NpcTarget<T>) {
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> next {
@@ -225,7 +224,7 @@ abstract class IContextBuilder {
         }
     }
 
-    fun NPCProperty.stopMoveAlways() {
+    fun Safe<NPCEntity>.stopMoveAlways() {
         next {
             this@stopMoveAlways().npcTarget.apply {
                 movingPos = null
@@ -234,7 +233,7 @@ abstract class IContextBuilder {
         }
     }
 
-    inline infix fun <reified T> NPCProperty.setTarget(target: NpcTarget<T>) {
+    inline infix fun <reified T> Safe<NPCEntity>.setTarget(target: NpcTarget<T>) {
 
         val type = T::class.java
         when {
@@ -247,11 +246,11 @@ abstract class IContextBuilder {
         }
     }
 
-    fun NPCProperty.clearTarget() {
+    fun Safe<NPCEntity>.clearTarget() {
         next { this@clearTarget().target = null }
     }
 
-    infix fun NPCProperty.setPose(fileName: () -> String) {
+    infix fun Safe<NPCEntity>.setPose(fileName: () -> String) {
         next {
             val file = fileName()
             val replay = RawPose.fromNBT(
@@ -261,11 +260,11 @@ abstract class IContextBuilder {
         }
     }
 
-    fun NPCProperty.clearPose() {
+    fun Safe<NPCEntity>.clearPose() {
         next { this@clearPose()[AnimatedEntityCapability::class].pose = RawPose() }
     }
 
-    infix fun NPCProperty.play(block: AnimationContainer.() -> Unit) {
+    infix fun Safe<NPCEntity>.play(block: AnimationContainer.() -> Unit) {
         next {
             val container = AnimationContainer().apply(block)
 
@@ -289,22 +288,22 @@ abstract class IContextBuilder {
     }
 
 
-    infix fun NPCProperty.playLooped(animation: () -> String) = play {
+    infix fun Safe<NPCEntity>.playLooped(animation: () -> String) = play {
         this.playType = PlayMode.LOOPED
         this.animation = animation()
     }
 
-    infix fun NPCProperty.playOnce(animation: () -> String) = play {
+    infix fun Safe<NPCEntity>.playOnce(animation: () -> String) = play {
         this.playType = PlayMode.ONCE
         this.animation = animation()
     }
 
-    infix fun NPCProperty.playFreeze(animation: () -> String) = play {
+    infix fun Safe<NPCEntity>.playFreeze(animation: () -> String) = play {
         this.playType = PlayMode.LAST_FRAME
         this.animation = animation()
     }
 
-    infix fun NPCProperty.stop(animation: () -> String) {
+    infix fun Safe<NPCEntity>.stop(animation: () -> String) {
         next {
             val anim = animation()
             this@stop()[AnimatedEntityCapability::class].layers.removeIfNoUpdate { it.animation == anim }
@@ -312,7 +311,7 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.useBlock(target: () -> Vec3) {
+    infix fun Safe<NPCEntity>.useBlock(target: () -> Vec3) {
         this moveTo target
         this lookAt target
         next {
@@ -329,7 +328,7 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.destroyBlock(target: () -> Vec3) {
+    infix fun Safe<NPCEntity>.destroyBlock(target: () -> Vec3) {
         this moveTo target
         this lookAt target
         next {
@@ -341,7 +340,7 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.dropItem(stack: () -> ItemStack) {
+    infix fun Safe<NPCEntity>.dropItem(stack: () -> ItemStack) {
         next {
             val entity = this@dropItem()
             val p = entity.position()
@@ -357,15 +356,15 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.requestItems(block: GiveItemList.() -> Unit) {
+    infix fun Safe<NPCEntity>.requestItems(block: GiveItemList.() -> Unit) {
         +NpcItemListNode(block, this@requestItems)
     }
 
-    fun NPCProperty.waitInteract() {
+    fun Safe<NPCEntity>.waitInteract() {
         +NpcInteractNode(this@waitInteract)
     }
 
-    infix fun NPCProperty.tpTo(target: TeleportContainer.() -> Unit) {
+    infix fun Safe<NPCEntity>.tpTo(target: TeleportContainer.() -> Unit) {
         next {
             val tp = TeleportContainer().apply(target)
             val teleport = tp.pos
@@ -373,26 +372,26 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.addTrade(offer: () -> MerchantOffer) {
+    infix fun Safe<NPCEntity>.addTrade(offer: () -> MerchantOffer) {
         next {
             this@addTrade().npcOffers.add(offer())
         }
     }
 
-    fun NPCProperty.clearTrades() {
+    fun Safe<NPCEntity>.clearTrades() {
         next {
             this@clearTrades().npcOffers.clear()
         }
     }
 
-    fun NPCProperty.clearTradeUses() {
+    fun Safe<NPCEntity>.clearTradeUses() {
         next {
             this@clearTradeUses().npcOffers.forEach { it.resetUses() }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    inline infix fun <reified T> NPCProperty.lookAt(target: NpcTarget<T>) {
+    inline infix fun <reified T> Safe<NPCEntity>.lookAt(target: NpcTarget<T>) {
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> +NpcLookToBlockNode(this@lookAt, target as NpcTarget<Vec3>)
@@ -407,7 +406,7 @@ abstract class IContextBuilder {
     }
 
     @Suppress("UNCHECKED_CAST")
-    inline infix fun <reified T> NPCProperty.lookAlwaysAt(target: NpcTarget<T>) {
+    inline infix fun <reified T> Safe<NPCEntity>.lookAlwaysAt(target: NpcTarget<T>) {
         val type = T::class.java
         when {
             Vec3::class.java.isAssignableFrom(type) -> next {
@@ -428,7 +427,7 @@ abstract class IContextBuilder {
         }
     }
 
-    fun NPCProperty.stopLookAlways() {
+    fun Safe<NPCEntity>.stopLookAlways() {
         next {
             this@stopLookAlways().npcTarget.apply {
                 lookingPos = null
@@ -438,7 +437,7 @@ abstract class IContextBuilder {
     }
 
 
-    fun NPCProperty.lookAtEntityType(entity: () -> String) {
+    fun Safe<NPCEntity>.lookAtEntityType(entity: () -> String) {
         val entityType = ForgeRegistries.ENTITY_TYPES.getValue(entity().rl)!!
         lookAt {
             val npc = this()
@@ -450,7 +449,7 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.replay(file: () -> String) {
+    infix fun Safe<NPCEntity>.replay(file: () -> String) {
         next {
             val replay = Replay.fromFile(DirectoryManager.HOLLOW_ENGINE.resolve("replays").resolve(file()))
             ReplayPlayer(this@replay()).apply {
@@ -461,7 +460,7 @@ abstract class IContextBuilder {
         }
     }
 
-    infix fun NPCProperty.replayAndWait(file: () -> String) {
+    infix fun Safe<NPCEntity>.replayAndWait(file: () -> String) {
         wait {
             val replay = Replay.fromFile(DirectoryManager.HOLLOW_ENGINE.resolve("replays").resolve(file()))
             ReplayPlayer(this@replayAndWait()).apply {
@@ -499,56 +498,60 @@ abstract class IContextBuilder {
     }
 
     @JvmName("playerPlay")
-    infix fun PlayerProperty.play(block: AnimationContainer.() -> Unit) = +SimpleNode {
+    infix fun Safe<List<ServerPlayer>>.play(block: AnimationContainer.() -> Unit) = +SimpleNode {
         val container = AnimationContainer().apply(block)
 
-        val serverLayers = this@play()[AnimatedEntityCapability::class].layers
+        for (serverPlayer in this@play()) {
+            val serverLayers = serverPlayer[AnimatedEntityCapability::class].layers
 
-        if (serverLayers.any { it.animation == container.animation }) return@SimpleNode
+            if (serverLayers.any { it.animation == container.animation }) return@SimpleNode
 
-        StartAnimationPacket(
-            this@play().id, container.animation, container.layerMode, container.playType, container.speed
-        ).send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(this@play))
+            StartAnimationPacket(
+                serverPlayer.id, container.animation, container.layerMode, container.playType, container.speed
+            ).send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with { serverPlayer })
 
-        if (container.playType != PlayMode.ONCE) {
-            //Нужно на случай если клиентская сущность выйдет из зоны видимости (удалится)
-            serverLayers.addNoUpdate(
-                AnimationLayer(
-                    container.animation, container.layerMode, container.playType, container.speed
+            if (container.playType != PlayMode.ONCE) {
+                //Нужно на случай если клиентская сущность выйдет из зоны видимости (удалится)
+                serverLayers.addNoUpdate(
+                    AnimationLayer(
+                        container.animation, container.layerMode, container.playType, container.speed
+                    )
                 )
-            )
+            }
         }
     }
 
     @JvmName("playerPlayLooped")
-    infix fun PlayerProperty.playLooped(animation: () -> String) = play {
+    infix fun Safe<List<ServerPlayer>>.playLooped(animation: () -> String) = play {
         this.playType = PlayMode.LOOPED
         this.animation = animation()
     }
 
     @JvmName("playerPlayOnce")
-    infix fun PlayerProperty.playOnce(animation: () -> String) = play {
+    infix fun Safe<List<ServerPlayer>>.playOnce(animation: () -> String) = play {
         this.playType = PlayMode.ONCE
         this.animation = animation()
     }
 
     @JvmName("playerPlayFreeze")
-    infix fun PlayerProperty.playFreeze(animation: () -> String) = play {
+    infix fun Safe<List<ServerPlayer>>.playFreeze(animation: () -> String) = play {
         this.playType = PlayMode.LAST_FRAME
         this.animation = animation()
     }
 
     @JvmName("playerStop")
-    infix fun PlayerProperty.stop(animation: () -> String) = +SimpleNode {
+    infix fun Safe<List<ServerPlayer>>.stop(animation: () -> String) = +SimpleNode {
         val anim = animation()
-        this@stop()[AnimatedEntityCapability::class].layers.removeIfNoUpdate { it.animation == anim }
-        StopAnimationPacket(this@stop().id, anim).send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(this@stop))
+        for (serverPlayer in this@stop()) {
+            val serverLayers = serverPlayer[AnimatedEntityCapability::class].layers
+            serverLayers.removeIfNoUpdate { it.animation == anim }
+        }
     }
 
 
-    infix fun NPCProperty.say(text: () -> String) = sayComponent { text().mcTranslate }
+    infix fun Safe<NPCEntity>.say(text: () -> String) = sayComponent { text().mcTranslate }
 
-    open infix fun NPCProperty.sayComponent(text: () -> Component): SimpleNode {
+    open infix fun Safe<NPCEntity>.sayComponent(text: () -> Component): SimpleNode {
         return next {
             val component = ("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").mcText + text()
             manager.server.playerList.players.forEach { it.sendSystemMessage(component) }
@@ -556,47 +559,50 @@ abstract class IContextBuilder {
     }
 
     @JvmName("playerSay")
-    infix fun PlayerProperty.say(text: () -> String) = sayComponent { text().mcTranslate }
+    infix fun Safe<List<ServerPlayer>>.say(text: () -> String) = sayComponent { text().mcTranslate }
 
     @JvmName("playerSayComponent")
-    open infix fun PlayerProperty.sayComponent(text: () -> Component) = +SimpleNode {
-        val component = ("§6[§7" + this@sayComponent().displayName.string + "§6]§7 ").mcText + text()
+    open infix fun Safe<List<ServerPlayer>>.sayComponent(text: () -> Component) = +SimpleNode {
+
+        val component = ("§6[§7" + this@sayComponent().random().displayName.string + "§6]§7 ").mcText + text()
         manager.server.playerList.players.forEach { it.sendSystemMessage(component) }
+
     }
 
     @JvmName("playerConfigure")
-    infix fun PlayerProperty.configure(body: AnimatedEntityCapability.() -> Unit) = +SimpleNode {
-        this@configure()[AnimatedEntityCapability::class].apply(body)
+    infix fun Safe<List<ServerPlayer>>.configure(body: AnimatedEntityCapability.() -> Unit) = +SimpleNode {
+        this@configure().forEach { it[AnimatedEntityCapability::class].apply(body) }
     }
 
-    fun PlayerProperty.saveInventory() = next {
-        val player = this@saveInventory()
-
-        player.persistentData.put("he_inventory", ListTag().apply(player.inventory::save))
-    }
-
-    fun PlayerProperty.loadInventory() = next {
-        val player = this@loadInventory()
-
-        if (player.persistentData.contains("he_inventory")) {
-            player.inventory.load(player.persistentData.getList("he_inventory", 10))
-            player.inventory.setChanged()
+    fun Safe<List<ServerPlayer>>.saveInventory() = next {
+        for (serverPlayer in this@saveInventory()) {
+            serverPlayer.persistentData.put("he_inventory", ListTag().apply(serverPlayer.inventory::save))
         }
     }
 
-    fun PlayerProperty.clearInventory() = next {
-        val player = this@clearInventory()
+    fun Safe<List<ServerPlayer>>.loadInventory() = next {
+        for (serverPlayer in this@loadInventory()) {
 
-        player.inventory.clearContent()
-        player.inventory.setChanged()
+            if (serverPlayer.persistentData.contains("he_inventory")) {
+                serverPlayer.inventory.load(serverPlayer.persistentData.getList("he_inventory", 10))
+                serverPlayer.inventory.setChanged()
+            }
+        }
     }
 
-    infix fun PlayerProperty.postEffect(effect: () -> ResourceLocation) = next {
-        PostChainPacket(effect()).send(this@postEffect())
+    fun Safe<List<ServerPlayer>>.clearInventory() = next {
+        for (serverPlayer in this@clearInventory()) {
+            serverPlayer.inventory.clearContent()
+            serverPlayer.inventory.setChanged()
+        }
     }
 
-    fun PlayerProperty.clearPostEffects() = +SimpleNode {
-        PostChainPacket(null).send(this@clearPostEffects())
+    infix fun Safe<List<ServerPlayer>>.postEffect(effect: () -> ResourceLocation) = next {
+        for (serverPlayer in this@postEffect()) PostChainPacket(effect()).send(serverPlayer)
+    }
+
+    fun Safe<List<ServerPlayer>>.clearPostEffects() = +SimpleNode {
+        for (serverPlayer in this@clearPostEffects()) PostChainPacket(null).send(serverPlayer)
     }
 
     class PosWaiter {
@@ -609,41 +615,47 @@ abstract class IContextBuilder {
         var createIcon = true
     }
 
-    infix fun PlayerProperty.waitPos(context: PosWaiter.() -> Unit) {
+    infix fun Safe<List<ServerPlayer>>.waitPos(context: PosWaiter.() -> Unit) {
         next {
-            val waiter = PosWaiter().apply(context)
-            if (!waiter.createIcon) return@next
-            val pos = waiter.pos
-            this@waitPos()[PlayerStoryCapability::class].aimMarks +=
-                AimMark(pos.x, pos.y, pos.z, waiter.icon, waiter.ignoreY)
+            for (serverPlayer in this@waitPos()) {
+                val waiter = PosWaiter().apply(context)
+                if (!waiter.createIcon) return@next
+                val pos = waiter.pos
+                serverPlayer[PlayerStoryCapability::class].aimMarks +=
+                    AimMark(pos.x, pos.y, pos.z, waiter.icon, waiter.ignoreY)
+            }
         }
         waitForgeEvent<ServerTickEvent> {
             var result = false
             val waiter = PosWaiter().apply(context)
             val worldKey = stateMachine.server.levelKeys().find { it.location() == waiter.world.rl }
             val world = worldKey?.let { stateMachine.server.getLevel(it) } ?: return@waitForgeEvent false
-            val it = this@waitPos()
 
-            val distance: (Vec3) -> Double =
-                if (!waiter.ignoreY) { pos: Vec3 -> sqrt(it.distanceToSqr(pos)) } else it::distanceToXZ
-            val compare: (Double) -> Boolean =
-                if (!waiter.inverse) { len: Double -> len <= waiter.radius }
-                else { len: Double -> len >= waiter.radius }
+            this().forEach { player ->
 
-            result = result || compare(distance(waiter.pos))
+                val distance: (Vec3) -> Double =
+                    if (!waiter.ignoreY) { pos: Vec3 -> sqrt(player.distanceToSqr(pos)) } else player::distanceToXZ
+                val compare: (Double) -> Boolean =
+                    if (!waiter.inverse) { len: Double -> len <= waiter.radius }
+                    else { len: Double -> len >= waiter.radius }
 
-            result = result && it.getLevel() == world
+                result = result || compare(distance(waiter.pos))
+                result = result && player.getLevel() == world
+            }
 
             if (result) {
-                it[PlayerStoryCapability::class].aimMarks.removeIf { it.x == waiter.pos.x && it.y == waiter.pos.y && it.z == waiter.pos.z }
+                for (serverPlayer in this@waitPos()) {
+                    if (!waiter.createIcon) return@waitForgeEvent false
+                    serverPlayer[PlayerStoryCapability::class].aimMarks.removeIf { it.x == waiter.pos.x && it.y == waiter.pos.y && it.z == waiter.pos.z }
+                }
             }
 
             result
         }
     }
 
-    infix fun PlayerProperty.removeMark(pos: () -> Vec3) = next {
-        this@removeMark()[PlayerStoryCapability::class].aimMarks.removeIf { it.x == pos().x && it.y == pos().y && it.z == pos().z }
+    infix fun Safe<List<ServerPlayer>>.removeMark(pos: () -> Vec3) = next {
+        for (serverPlayer in this@removeMark()) serverPlayer[PlayerStoryCapability::class].aimMarks.removeIf { it.x == pos().x && it.y == pos().y && it.z == pos().z }
     }
 
     fun async(body: NodeContextBuilder.() -> Unit): AsyncProperty {

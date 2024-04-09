@@ -11,16 +11,17 @@ import ru.hollowhorizon.hollowengine.common.capabilities.StoriesCapability
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.util.NpcContainer
+import ru.hollowhorizon.hollowengine.common.util.Safe
 import java.util.*
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 class NpcDelegate(
     settings: () -> NpcContainer,
-) : Node(), ReadOnlyProperty<Any?, NPCProperty> {
+) : Node(), ReadOnlyProperty<Any?, Safe<NPCEntity>> {
     val settings by lazy { settings() }
     var entityUUID: UUID? = null
-    private val property = NPCProperty(npc = {
+    private val property = Safe {
         val world = this.settings.world.rl
         val model = this.settings.model
         check(ResourceLocation.isValidResourceLocation(model)) { "Invalid model path: $model" }
@@ -30,8 +31,8 @@ class NpcDelegate(
         val level = manager.server.getLevel(dimension)
             ?: throw IllegalStateException("Dimension $world not found. Or not loaded")
 
-        level.getEntity(entityUUID ?: return@NPCProperty null) as NPCEntity
-    })
+        level.getEntity(entityUUID ?: return@Safe null) as NPCEntity
+    }
 
     override fun init() {
         check(ResourceLocation.isValidResourceLocation(settings.model)) { "Invalid model path: ${settings.model}" }
@@ -81,7 +82,7 @@ class NpcDelegate(
         }
     }
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>): NPCProperty {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): Safe<NPCEntity> {
         return this.property
     }
 
@@ -104,9 +105,9 @@ class NPCFindContainer(var uuid: String = "", var name: String = "", var world: 
 
 class NPCFindDelegate(
     settings: () -> NPCFindContainer,
-) : Node(), ReadOnlyProperty<Any?, NPCProperty> {
+) : Node(), ReadOnlyProperty<Any?, Safe<NPCEntity>> {
     private val settings by lazy { settings() }
-    private val property = NPCProperty(npc = {
+    private val property = Safe {
         val name = this.settings.name
         val world = this.settings.world.rl
 
@@ -121,7 +122,7 @@ class NPCFindDelegate(
         })
 
         level.getEntity(uuid) as NPCEntity
-    })
+    }
 
     override fun tick(): Boolean {
         return !property.isLoaded
@@ -131,7 +132,7 @@ class NPCFindDelegate(
 
     override fun deserializeNBT(nbt: CompoundTag) {}
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>): NPCProperty {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): Safe<NPCEntity> {
         return this.property
     }
 }

@@ -4,12 +4,14 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.event.ServerChatEvent
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.ForgeEventNode
-import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.players.PlayerProperty
 import ru.hollowhorizon.hollowengine.common.util.Safe
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-data class InputContainer(var message: String = "", var player: PlayerProperty = PlayerProperty(null))
+data class InputContainer(
+    var message: String = "",
+    var player: Safe<List<ServerPlayer>> = Safe { emptyList() },
+)
 
 class InputNode(vararg val values: String, val players: Safe<List<ServerPlayer>>) :
     ForgeEventNode<ServerChatEvent.Submitted>(ServerChatEvent.Submitted::class.java, { true }),
@@ -19,7 +21,7 @@ class InputNode(vararg val values: String, val players: Safe<List<ServerPlayer>>
     override val action = { event: ServerChatEvent.Submitted ->
         val player = event.player
 
-        container.player.value = player
+        container.player.data = { listOf(player) }
         hasPlayer = true
         container.message = event.message.string
 
@@ -31,15 +33,16 @@ class InputNode(vararg val values: String, val players: Safe<List<ServerPlayer>>
     override fun serializeNBT(): CompoundTag {
         return super.serializeNBT().apply {
             putString("message", container.message)
-            if(hasPlayer) container.player.invoke().uuid.let { putUUID("player", it) }
+            if (hasPlayer) container.player.invoke().firstOrNull()?.uuid.let { putUUID("player", it) }
         }
     }
 
     override fun deserializeNBT(nbt: CompoundTag) {
         super.deserializeNBT(nbt)
         container.message = nbt.getString("message")
-        container.player.value =
-            nbt.getUUID("player").let { uuid -> players().firstOrNull { it.uuid == uuid } } as ServerPlayer
+        container.player.data = {
+            listOf(nbt.getUUID("player").let { uuid -> players().firstOrNull { it.uuid == uuid } } as ServerPlayer)
+        }
     }
 
     override fun getValue(thisRef: Any?, property: KProperty<*>): InputContainer {

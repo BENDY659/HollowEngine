@@ -10,6 +10,7 @@ import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
+import ru.hollowhorizon.hollowengine.common.util.Safe
 
 open class GiveItemList {
     val items = mutableListOf<ItemStack>()
@@ -49,13 +50,13 @@ private fun ItemStack.isItemStackEqual(it: ItemStack): Boolean {
     return true
 }
 
-class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: NPCProperty) : Node() {
+class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: Safe<NPCEntity>) : Node() {
     val itemList by lazy { GiveItemList().apply(itemList) }
     var isStarted = false
 
     override fun tick(): Boolean {
         if(!npc.isLoaded) return true
-        val npc = npc()!!
+        val npc = npc()
         if (!isStarted) {
             isStarted = true
             npc.shouldGetItem = { entityItem ->
