@@ -2,7 +2,9 @@ package ru.hollowhorizon.hollowengine.common.npcs
 
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.Level
 import net.minecraft.world.phys.Vec3
@@ -12,9 +14,10 @@ import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
     var movingPos: Vec3? = null
     var movingEntity: Entity? = null
-
+    var movingGroup: List<ServerPlayer>? = null
     var lookingPos: Vec3? = null
     var lookingEntity: Entity? = null
+    var lookingGroup: List<ServerPlayer>? = null
 
     fun tick(entity: NPCEntity) {
         if (movingPos != null) {
@@ -28,7 +31,14 @@ class NpcTarget(val level: Level) : INBTSerializable<CompoundTag> {
             entity.lookControl.setLookAt(eyes.x, eyes.y, eyes.z, 10f, 30f)
         }
 
-
+        if (this.movingGroup != null) {
+            val nearest = this.movingGroup!!.minByOrNull { entity.distanceTo(it) } ?: return
+            entity.navigation.moveTo(nearest, 1.0)
+        }
+        if (this.lookingGroup != null) {
+            val nearest = this.lookingGroup!!.minByOrNull { entity.distanceTo(it) } ?: return
+            entity.lookControl.setLookAt(nearest.eyePosition.x, nearest.eyePosition.y, nearest.eyePosition.z, 10f, 30f)
+        }
     }
 
     override fun serializeNBT() = CompoundTag().apply {

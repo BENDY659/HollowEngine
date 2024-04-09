@@ -210,6 +210,7 @@ abstract class IContextBuilder {
                 this@moveAlwaysTo().npcTarget.apply {
                     movingPos = target() as Vec3
                     movingEntity = null
+                    movingGroup = null
                 }
             }
 
@@ -217,6 +218,15 @@ abstract class IContextBuilder {
                 this@moveAlwaysTo().npcTarget.apply {
                     movingPos = null
                     movingEntity = target() as Entity
+                    movingGroup = null
+                }
+            }
+
+            List::class.java.isAssignableFrom(type) -> next {
+                this@moveAlwaysTo().npcTarget.apply {
+                    movingPos = null
+                    movingEntity = null
+                    movingGroup = target as List<ServerPlayer>
                 }
             }
 
@@ -229,6 +239,7 @@ abstract class IContextBuilder {
             this@stopMoveAlways().npcTarget.apply {
                 movingPos = null
                 movingEntity = null
+                movingGroup = null
             }
         }
     }
@@ -413,6 +424,7 @@ abstract class IContextBuilder {
                 this@lookAlwaysAt().npcTarget.apply {
                     lookingPos = target() as Vec3
                     lookingEntity = null
+                    lookingGroup = null
                 }
             }
 
@@ -420,6 +432,15 @@ abstract class IContextBuilder {
                 this@lookAlwaysAt().npcTarget.apply {
                     lookingPos = null
                     lookingEntity = target() as Entity
+                    lookingGroup = null
+                }
+            }
+
+            List::class.java.isAssignableFrom(type) -> next {
+                this@lookAlwaysAt().npcTarget.apply {
+                    lookingPos = null
+                    lookingEntity = null
+                    lookingGroup = target as List<ServerPlayer>
                 }
             }
 
@@ -432,6 +453,7 @@ abstract class IContextBuilder {
             this@stopLookAlways().npcTarget.apply {
                 lookingPos = null
                 lookingEntity = null
+                lookingGroup = null
             }
         }
     }
@@ -563,10 +585,10 @@ abstract class IContextBuilder {
 
     @JvmName("playerSayComponent")
     open infix fun Safe<List<ServerPlayer>>.sayComponent(text: () -> Component) = +SimpleNode {
-
-        val component = ("§6[§7" + this@sayComponent().random().displayName.string + "§6]§7 ").mcText + text()
-        manager.server.playerList.players.forEach { it.sendSystemMessage(component) }
-
+        this@sayComponent().forEach {
+            val component = ("§6[§7" + it.displayName.string + "§6]§7 ").mcText + text()
+            it.sendSystemMessage(component)
+        }
     }
 
     @JvmName("playerConfigure")

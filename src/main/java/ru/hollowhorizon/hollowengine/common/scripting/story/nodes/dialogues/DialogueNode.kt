@@ -25,7 +25,6 @@ import ru.hollowhorizon.hollowengine.common.network.MouseButton
 import ru.hollowhorizon.hollowengine.common.network.ServerMouseClickedEvent
 import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 import ru.hollowhorizon.hollowengine.common.npcs.NpcIcon
-import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.StoryStateMachine
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.HasInnerNodes
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
@@ -85,7 +84,10 @@ class DialogueNode(val nodes: List<Node>, val npc: Safe<NPCEntity>? = null) : No
             npc.let {
                 val entity = it()
                 entity[NPCCapability::class].icon = NpcIcon.EMPTY
-                DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
+                DrawMousePacket(
+                    enable = false,
+                    onlyOnNpc = false
+                ).send(*manager.server.playerList.players.toTypedArray())
                 entity.onInteract = NPCEntity.EMPTY_INTERACT
             }
         }
@@ -179,10 +181,11 @@ class DialogueContext(val action: ChoiceAction, stateMachine: StoryStateMachine)
     override fun Safe<List<ServerPlayer>>.sayComponent(text: () -> Component): SimpleNode {
         if (action == ChoiceAction.WORLD) {
             return next {
-
-                val component =
-                    Component.literal("§6[§7" + this@sayComponent().random().displayName.string + "§6]§7 ").append(text())
-                stateMachine.server.playerList.players.forEach { it.sendSystemMessage(component) }
+                this@sayComponent().forEach {
+                    val component =
+                        Component.literal("§6[§7" + it.displayName.string + "§6]§7 ").append(text())
+                    it.sendSystemMessage(component)
+                }
             }
         } else {
             val result = +SimpleNode {
