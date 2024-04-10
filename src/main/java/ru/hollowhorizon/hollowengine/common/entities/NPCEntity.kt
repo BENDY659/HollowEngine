@@ -1,6 +1,5 @@
 package ru.hollowhorizon.hollowengine.common.entities
 
-import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
@@ -9,6 +8,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
+import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.*
 import net.minecraft.world.entity.ai.goal.FloatGoal
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal
@@ -18,7 +18,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.trading.Merchant
 import net.minecraft.world.item.trading.MerchantOffer
 import net.minecraft.world.item.trading.MerchantOffers
-import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.Level
 import net.minecraftforge.common.capabilities.Capability
@@ -30,8 +29,8 @@ import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.common.capabilities.ICapabilitySyncer
 import ru.hollowhorizon.hollowengine.client.render.effects.EffectsCapability
 import ru.hollowhorizon.hollowengine.client.render.effects.ParticleEffect
+import ru.hollowhorizon.hollowengine.common.capabilities.StoriesCapability
 import ru.hollowhorizon.hollowengine.common.npcs.HitboxMode
-import ru.hollowhorizon.hollowengine.common.npcs.MerchantNpc
 import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 import ru.hollowhorizon.hollowengine.common.npcs.NpcTarget
 import ru.hollowhorizon.hollowengine.common.npcs.goals.BlockBreakGoal
@@ -106,7 +105,8 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
         npcOffers = MerchantOffers(pCompound.getCompound("npc_trades"))
     }
 
-    override fun createNavigation(pLevel: Level) = super.createNavigation(pLevel).apply { nodeEvaluator.setCanOpenDoors(true); nodeEvaluator.setCanPassDoors(true) } //NPCPathNavigatorV2(this, pLevel)
+    override fun createNavigation(pLevel: Level) = super.createNavigation(pLevel)
+        .apply { nodeEvaluator.setCanOpenDoors(true); nodeEvaluator.setCanPassDoors(true) } //NPCPathNavigatorV2(this, pLevel)
 
     override fun mobInteract(pPlayer: Player, pHand: InteractionHand): InteractionResult {
         if (pHand == InteractionHand.MAIN_HAND) {
@@ -218,6 +218,11 @@ class NPCEntity : PathfinderMob, IAnimated, Merchant, ICapabilitySyncer {
 
         entityData[sizeX] = pCompound.getFloat("sizeX")
         entityData[sizeY] = pCompound.getFloat("sizeY")
+    }
+
+    override fun die(pDamageSource: DamageSource) {
+        super.die(pDamageSource)
+        level[StoriesCapability::class].activeNpcs.remove(uuid.toString())
     }
 
     companion object {

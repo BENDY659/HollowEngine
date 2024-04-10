@@ -31,7 +31,8 @@ class NpcDelegate(
         val level = manager.server.getLevel(dimension)
             ?: throw IllegalStateException("Dimension $world not found. Or not loaded")
 
-        level.getEntity(entityUUID ?: return@Safe null) as NPCEntity
+
+        level.getEntity(entityUUID ?: return@Safe null) as? NPCEntity
     }
 
     override fun init() {
@@ -78,7 +79,7 @@ class NpcDelegate(
         entityUUID = entity.uuid
 
         manager.scriptRequirements += {
-            property.isLoaded || !level[StoriesCapability::class].activeNpcs.containsKey(entityUUID.toString())
+            !level[StoriesCapability::class].activeNpcs.containsKey(entityUUID.toString()) || property.isLoaded
         }
     }
 
@@ -87,8 +88,6 @@ class NpcDelegate(
     }
 
     override fun tick(): Boolean {
-
-
         return !property.isLoaded
     }
 
