@@ -226,7 +226,7 @@ abstract class IContextBuilder {
                 this@moveAlwaysTo().npcTarget.apply {
                     movingPos = null
                     movingEntity = null
-                    movingGroup = target as List<ServerPlayer>
+                    movingGroup = target() as List<ServerPlayer>
                 }
             }
 
@@ -440,7 +440,7 @@ abstract class IContextBuilder {
                 this@lookAlwaysAt().npcTarget.apply {
                     lookingPos = null
                     lookingEntity = null
-                    lookingGroup = target as List<ServerPlayer>
+                    lookingGroup = target() as List<ServerPlayer>
                 }
             }
 
