@@ -674,9 +674,8 @@ abstract class IContextBuilder {
                 result = result && player.getLevel() == world
             }
 
-            if (result) {
+            if (result && waiter.createIcon) {
                 for (serverPlayer in this@waitPos()) {
-                    if (!waiter.createIcon) return@waitForgeEvent false
                     serverPlayer[PlayerStoryCapability::class].aimMarks.removeIf { it.x == waiter.pos.x && it.y == waiter.pos.y && it.z == waiter.pos.z }
                 }
             }
