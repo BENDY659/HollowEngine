@@ -2,6 +2,7 @@ package ru.hollowhorizon.hollowengine.client.gui
 
 import com.mojang.blaze3d.vertex.PoseStack
 import imgui.ImGui
+import imgui.flag.ImGuiInputTextFlags
 import imgui.flag.ImGuiWindowFlags
 import imgui.type.ImBoolean
 import imgui.type.ImDouble
@@ -33,55 +34,16 @@ class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
     val npcName = ImString().apply {
         set(
             arrayOf(
-                "Элдриан",
-                "Лунара",
-                "Зефир",
-                "Аурелиан",
-                "Нираллия",
-                "Гриммар",
-                "Лирель",
-                "Силвана",
-                "Фэйт",
-                "Эландор",
-                "Изабель",
-                "Торган",
-                "Амаранта",
-                "Финнрод",
-                "Элисия",
-                "Лордран",
-                "Алевтина",
-                "Северин",
-                "Эвелина",
-                "Дракондор",
-                "Иллирия",
-                "Варгрим",
-                "Феодора",
-                "Леонин",
-                "Иридия",
-                "Таэлин",
-                "Ксантия",
-                "Лиандор",
-                "Ясмина",
-                "Верендил",
-                "Аэлара",
-                "Ренгар",
-                "Эмберлин",
-                "Гвиндор",
-                "Лиллиана",
-                "Азариэль",
-                "Лавиния",
-                "Моргрим",
-                "Селеста",
-                "Эльрик",
-                "Лунис",
-                "Изольда",
-                "Фэррон",
-                "Элинор",
-                "Дариан",
-                "Нефелия",
-                "Стормгард",
-                "Сарафина",
-                "Галадриэль",
+                "Элдриан", "Лунара", "Зефир", "Аурелиан", "Нираллия",
+                "Гриммар", "Лирель", "Силвана", "Фэйт", "Эландор",
+                "Изабель", "Торган", "Амаранта", "Финнрод", "Элисия",
+                "Лордран", "Алевтина", "Северин", "Эвелина", "Дракондор",
+                "Иллирия", "Варгрим", "Феодора", "Леонин", "Иридия",
+                "Таэлин", "Ксантия", "Лиандор", "Ясмина", "Верендил",
+                "Аэлара", "Ренгар", "Эмберлин", "Гвиндор", "Лиллиана",
+                "Азариэль", "Лавиния", "Моргрим", "Селеста", "Эльрик",
+                "Лунис", "Изольда", "Фэррон", "Элинор", "Дариан",
+                "Нефелия", "Стормгард", "Сарафина", "Галадриэль",
                 "Демитриус"
             ).random()
         )
@@ -126,7 +88,10 @@ class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
                     drawGeneral()
 
                     val size = ImGui.calcTextSize("Создать")
-                    ImGui.setCursorPos(ImGui.getWindowWidth() - size.x - ImGui.getStyle().windowPaddingX * 2, ImGui.getWindowHeight() - size.y - ImGui.getStyle().windowPaddingY * 2)
+                    ImGui.setCursorPos(
+                        ImGui.getWindowWidth() - size.x - ImGui.getStyle().windowPaddingX * 2,
+                        ImGui.getWindowHeight() - size.y - ImGui.getStyle().windowPaddingY * 2
+                    )
                     if (ImGui.button("Создать")) {
                         onClose()
                         NPCCreatorPacket(
@@ -190,7 +155,8 @@ class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
         val animationTypes = model.animationPlayer.typeToAnimationMap
         var animationToChange: Pair<String, String>? = null
 
-        for (anim in animationTypes.map { it.key.toString() to it.value.name }.sortedBy { AnimationType.valueOf(it.first).ordinal }) {
+        for (anim in animationTypes.map { it.key.toString() to it.value.name }
+            .sortedBy { AnimationType.valueOf(it.first).ordinal }) {
             val index = ImInt(
                 animationNames.indexOf(
                     if (anim.first !in animations.keys) anim.second else animations[anim.first]
@@ -205,7 +171,7 @@ class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
     }
 
     private fun drawTextures() {
-        val textureNames = model.modelTree.materials.map { it.texture.toString() }
+        val textureNames = model.modelTree.materials.map { it.texture.path.toString() }
 
         for (texture in textureNames) {
             ImGui.text(texture)
@@ -213,7 +179,7 @@ class NPCCreatorGui(x: Double, y: Double, z: Double) : HollowScreen() {
             val text = ImString()
             text.set(textures.computeIfAbsent(texture) { "" })
             ImGui.pushID(texture)
-            if (ImGui.inputText("", text)) {
+            if (ImGui.inputText("", text, ImGuiInputTextFlags.NoUndoRedo)) {
                 textures[texture] = text.get()
             }
             ImGui.popID()
@@ -265,7 +231,7 @@ class NPCCreatorPacket(
     val textures: Map<String, String>,
     val tX: Float, val tY: Float, val tZ: Float,
     val rX: Float, val rY: Float, val rZ: Float,
-    val sX: Float, val sY: Float, val sZ: Float
+    val sX: Float, val sY: Float, val sZ: Float,
 ) : HollowPacketV3<NPCCreatorPacket> {
     override fun handle(player: Player, data: NPCCreatorPacket) {
         val entity = NPCEntity(player.level).apply {
