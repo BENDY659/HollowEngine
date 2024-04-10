@@ -383,6 +383,15 @@ abstract class IContextBuilder {
         }
     }
 
+    @JvmName("playerTpTo")
+    infix fun Safe<List<ServerPlayer>>.tpTo(target: TeleportContainer.() -> Unit) {
+        next {
+            val tp = TeleportContainer().apply(target)
+            val teleport = tp.pos
+            this@tpTo().forEach { it.teleportTo(teleport.x, teleport.y, teleport.z) }
+        }
+    }
+
     infix fun Safe<NPCEntity>.addTrade(offer: () -> MerchantOffer) {
         next {
             this@addTrade().npcOffers.add(offer())
