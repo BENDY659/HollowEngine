@@ -4,6 +4,8 @@
   "item.hollowengine.storyteller_dim_teleporter": "Teleport: Storyteller Dimension",
   "item.hollowengine.camera": "Camera",
   "item.hollowengine.npc_tool": "NPC Configuration Tool",
+  "item.hollowengine.target_selector": "Настройщик цели",
+  "item.hollowengine.target_selector.hc_desc": "ПКМ: добавить цель. SHIFT + ПКМ: очистить список целей.",
   "key.categories.hollowengine.keys": "HollowEngine Keys",
   "key.hollowengine.event_list": "Event List",
   "key.hollowengine.toggle_recording": "On/Off action recording",
