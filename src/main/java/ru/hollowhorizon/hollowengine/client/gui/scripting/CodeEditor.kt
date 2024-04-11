@@ -127,7 +127,7 @@ object CodeEditor {
             ImGuiWindowFlags.NoMove or ImGuiWindowFlags.NoResize or ImGuiWindowFlags.NoCollapse or ImGuiWindowFlags.NoTitleBar
         )
 
-        if (currentFile.endsWith(".kts")) {
+        if (currentPath.endsWith(".kts")) {
             val engine = ModList.get().getModContainerById("hollowengine").get().modInfo
             val compiler = ModList.get().getModContainerById("kotlinscript").get().modInfo
             ImGui.text("Minecraft ${Minecraft.getInstance().game.version.name} | ${engine.displayName} ${engine.version} | ${compiler.displayName} ${compiler.version}")

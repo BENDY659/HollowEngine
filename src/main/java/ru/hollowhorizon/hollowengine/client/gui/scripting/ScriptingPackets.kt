@@ -56,6 +56,7 @@ class LoadTreePacket(val tree: Tree) : HollowPacketV3<LoadTreePacket> {
 @Serializable
 class UpdateFilePacket(val path: String, val text: String) : HollowPacketV3<UpdateFilePacket> {
     override fun handle(player: Player, data: UpdateFilePacket) {
+        CodeEditor.currentFile = ""
         CodeEditor.files.removeIf { it.path == data.path }
         CodeEditor.files.add(
             ScriptData(path.substringAfterLast('/'), data.text, path, ImBoolean(true))
