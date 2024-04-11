@@ -49,7 +49,7 @@ object CodeEditor {
             npc say { "Привет, я \$\{npc()!!.name.string}" }
         """.trimIndent()
     }
-    var tree = tree(DirectoryManager.HOLLOW_ENGINE)
+    var tree = Tree("Загрузка", "null")
     var updateTime = 0
     val input = ImString()
     var inputText = ""
