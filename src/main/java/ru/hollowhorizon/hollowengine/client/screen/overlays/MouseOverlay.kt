@@ -1,23 +1,25 @@
 package ru.hollowhorizon.hollowengine.client.screen.overlays
 
 import com.mojang.blaze3d.systems.RenderSystem
-import com.mojang.blaze3d.vertex.*
+import com.mojang.blaze3d.vertex.PoseStack
 import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.EntityHitResult
-import ru.hollowhorizon.hc.HollowCore
+import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hc.client.utils.use
 import ru.hollowhorizon.hc.common.network.HollowPacketV2
 import ru.hollowhorizon.hc.common.network.HollowPacketV3
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
+import ru.hollowhorizon.hollowengine.common.network.MouseButton
+import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 
 object MouseOverlay {
-    var onlyOnNpc = false
-    val texture = "hollowengine:textures/gui/icons/mouse.png".rl
+    const val ICONS = "hollowengine:textures/gui/icons"
+    var texture = "$ICONS/mouse_right.png".rl
     var enable = false
         set(value) {
             startTime = currentTime
@@ -28,16 +30,20 @@ object MouseOverlay {
     private var startTime = 0
 
     fun draw(stack: PoseStack, x: Int, y: Int, partialTick: Float) {
-        if (onlyOnNpc) {
-            val npc = (Minecraft.getInstance().hitResult as? EntityHitResult)?.entity ?: return
-            
-            if(npc !is NPCEntity) return
-        }
+        val npc = (Minecraft.getInstance().hitResult as? EntityHitResult)?.entity as? NPCEntity ?: return
 
         var progress = Mth.clamp((currentTime - startTime + partialTick) / 20f, 0f, 1f)
+        if (!enable) progress = 1f - progress
 
-        if(!enable) progress = 1f - progress
-        if(progress > 0f) {
+        val button = npc[NPCCapability::class].mouseButton
+
+        if (button != MouseButton.NONE) {
+            if(!enable) enable = true
+            texture = "$ICONS/mouse_$button.png".rl
+        }
+
+
+        if (progress > 0f) {
             RenderSystem.enableBlend()
             RenderSystem.defaultBlendFunc()
 
@@ -65,10 +71,10 @@ object MouseOverlay {
 
 @HollowPacketV2(HollowPacketV2.Direction.TO_CLIENT)
 @Serializable
-class DrawMousePacket(private val enable: Boolean, private val onlyOnNpc: Boolean = false): HollowPacketV3<DrawMousePacket> {
+class DrawMousePacket(private val enable: Boolean) :
+    HollowPacketV3<DrawMousePacket> {
     override fun handle(player: Player, data: DrawMousePacket) {
         MouseOverlay.enable = data.enable
-        MouseOverlay.onlyOnNpc = data.onlyOnNpc
     }
 
 }

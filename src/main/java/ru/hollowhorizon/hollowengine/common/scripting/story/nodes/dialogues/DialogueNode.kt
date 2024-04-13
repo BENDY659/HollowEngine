@@ -85,8 +85,7 @@ class DialogueNode(val nodes: List<Node>, val npc: Safe<NPCEntity>? = null) : No
                 val entity = it()
                 entity[NPCCapability::class].icon = NpcIcon.EMPTY
                 DrawMousePacket(
-                    enable = false,
-                    onlyOnNpc = false
+                    enable = false
                 ).send(*manager.server.playerList.players.toTypedArray())
                 entity.onInteract = NPCEntity.EMPTY_INTERACT
             }
@@ -102,7 +101,7 @@ class DialogueNode(val nodes: List<Node>, val npc: Safe<NPCEntity>? = null) : No
         npc?.let {
             val entity = it()
             entity[NPCCapability::class].icon = NpcIcon.DIALOGUE
-            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.server.playerList.players.toTypedArray())
+            DrawMousePacket(enable = true).send(*manager.server.playerList.players.toTypedArray())
             entity.onInteract = {
                 if (it is ServerPlayer && it in manager.server.playerList.players) {
                     DialogueScreenPacket(true, canClose = true).send(PacketDistributor.PLAYER.with { it })
@@ -128,7 +127,7 @@ class DialogueNode(val nodes: List<Node>, val npc: Safe<NPCEntity>? = null) : No
         npc?.let {
             val entity = it()
             entity[NPCCapability::class].icon = NpcIcon.EMPTY
-            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
+            DrawMousePacket(enable = false).send(*manager.server.playerList.players.toTypedArray())
             entity.onInteract = NPCEntity.EMPTY_INTERACT
         }
         return false

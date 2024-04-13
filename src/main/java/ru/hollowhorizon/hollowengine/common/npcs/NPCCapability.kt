@@ -7,12 +7,13 @@ import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hc.common.capabilities.CapabilityInstance
 import ru.hollowhorizon.hc.common.capabilities.HollowCapabilityV2
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
-import java.util.UUID
+import ru.hollowhorizon.hollowengine.common.network.MouseButton
 
 @HollowCapabilityV2(NPCEntity::class)
 class NPCCapability: CapabilityInstance() {
     var hitboxMode by syncable(HitboxMode.PULLING)
     var icon by syncable(NpcIcon.EMPTY)
+    var mouseButton by syncable(MouseButton.NONE)
 }
 
 @Serializable

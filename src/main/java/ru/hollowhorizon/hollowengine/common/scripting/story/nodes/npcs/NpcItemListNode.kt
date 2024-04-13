@@ -4,10 +4,12 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
+import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hollowengine.client.screen.overlays.DrawMousePacket
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
-import ru.hollowhorizon.hollowengine.common.scripting.players
+import ru.hollowhorizon.hollowengine.common.network.MouseButton
+import ru.hollowhorizon.hollowengine.common.npcs.NPCCapability
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.Node
 import ru.hollowhorizon.hollowengine.common.util.Safe
@@ -72,7 +74,8 @@ class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: Safe<NPCEntity
                 }
                 itemList.items.any { entityItem.item == it.item }
             }
-            DrawMousePacket(enable = true, onlyOnNpc = true).send(*manager.server.playerList.players.toTypedArray())
+            DrawMousePacket(enable = true).send(*manager.server.playerList.players.toTypedArray())
+            npc[NPCCapability::class].mouseButton = MouseButton.RIGHT
             npc.onInteract = { player ->
                 player.sendSystemMessage(itemList.text.mcTranslate)
                 itemList.items.forEach {
@@ -82,8 +85,9 @@ class NpcItemListNode(itemList: GiveItemList.() -> Unit, val npc: Safe<NPCEntity
         }
         val hasItems = itemList.items.isNotEmpty()
         if (!hasItems) {
-            DrawMousePacket(enable = false, onlyOnNpc = false).send(*manager.server.playerList.players.toTypedArray())
+            DrawMousePacket(enable = false).send(*manager.server.playerList.players.toTypedArray())
             npc.shouldGetItem = { false }
+            npc[NPCCapability::class].mouseButton = MouseButton.NONE
             npc.onInteract = NPCEntity.EMPTY_INTERACT
         }
         return hasItems

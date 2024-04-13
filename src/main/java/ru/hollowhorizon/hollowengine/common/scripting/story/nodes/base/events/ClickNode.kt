@@ -5,7 +5,6 @@ import ru.hollowhorizon.hollowengine.client.screen.overlays.DrawMousePacket
 import ru.hollowhorizon.hollowengine.common.network.MouseButton
 import ru.hollowhorizon.hollowengine.common.network.MouseButtonWaitPacket
 import ru.hollowhorizon.hollowengine.common.network.ServerMouseClickedEvent
-import ru.hollowhorizon.hollowengine.common.scripting.players
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.IContextBuilder
 import ru.hollowhorizon.hollowengine.common.scripting.story.nodes.base.ForgeEventNode
 

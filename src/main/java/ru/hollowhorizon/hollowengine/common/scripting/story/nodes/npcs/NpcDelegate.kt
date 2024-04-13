@@ -43,6 +43,16 @@ class NpcDelegate(
         val level = manager.server.getLevel(dimension)
             ?: throw IllegalStateException("Dimension ${settings.world} not found. Or not loaded")
 
+        val npcs = level[StoriesCapability::class].activeNpcs
+
+        npcs.entries.find { it.value == settings.name }?.key?.let {
+            entityUUID = UUID.fromString(it)
+            manager.scriptRequirements += {
+                !npcs.containsKey(entityUUID.toString()) || property.isLoaded
+            }
+            return
+        }
+
         if (entityUUID != null) return
 
         val entity = NPCEntity(level).apply {
@@ -73,13 +83,13 @@ class NpcDelegate(
             customName = settings.name.mcText
 
             level.addFreshEntity(this)
-            level[StoriesCapability::class].activeNpcs[this.uuid.toString()] = settings.name
+            npcs[this.uuid.toString()] = settings.name
         }
 
         entityUUID = entity.uuid
 
         manager.scriptRequirements += {
-            !level[StoriesCapability::class].activeNpcs.containsKey(entityUUID.toString()) || property.isLoaded
+            !npcs.containsKey(entityUUID.toString()) || property.isLoaded
         }
     }
 
