@@ -114,7 +114,6 @@ dependencies {
     implementation(kotlin("scripting-jvm-host"))
     implementation(kotlin("scripting-jvm"))
     implementation("thedarkcolour:kotlinforforge:$kffVersion")
-    implementation("com.github.SrRapero720.watermedia:build:2.0.28")
     implementation(fg.deobf("ru.hollowhorizon:kotlinscript:${ksffVersion}"))
     implementation(fg.deobf("ru.hollowhorizon:hc:${mcVersion}-${hcVersion}"))
     implementation(fg.deobf("curse.maven:jei-238222:4712866"))
