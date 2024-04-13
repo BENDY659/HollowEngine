@@ -39,7 +39,7 @@ object MouseOverlay {
 
         if (button != MouseButton.NONE) {
             if(!enable) enable = true
-            texture = "$ICONS/mouse_$button.png".rl
+            texture = "$ICONS/mouse_${button.name.lowercase()}.png".rl
         }
 
 
