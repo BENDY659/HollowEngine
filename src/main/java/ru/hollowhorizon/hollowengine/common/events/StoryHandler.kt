@@ -98,6 +98,7 @@ object StoryHandler {
         }
     }
 
+    @JvmStatic
     fun onServerStart(event: ServerStartedEvent) {
         if (isLogicalClient) return
         val stories = event.server.overworld()[StoriesCapability::class].stories
@@ -111,7 +112,7 @@ object StoryHandler {
 
     @JvmStatic
     fun onScriptError(event: ScriptErrorEvent) {
-        val server = ServerLifecycleHooks.getCurrentServer()
+        val server = ServerLifecycleHooks.getCurrentServer() ?: return
 
         server.playerList.players.forEach { player ->
             ScriptErrorPacket(
