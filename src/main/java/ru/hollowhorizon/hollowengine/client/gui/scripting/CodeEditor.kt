@@ -54,6 +54,7 @@ object CodeEditor {
     val input = ImString()
     var inputText = ""
     var inputAction = -1
+    var shouldClose = false
 
     fun draw() {
         if (TickHandler.currentTicks - updateTime > 100) {
@@ -153,7 +154,10 @@ object CodeEditor {
                 currentFile = file.name
                 currentPath = file.path
                 editor.render("Code Editor")
-
+                if(shouldClose) {
+                    ImGui.setKeyboardFocusHere(-1)
+                    shouldClose = false
+                }
                 if (editor.isTextChanged) {
                     file.code = editor.text.substringBeforeLast("\n")
                     SaveFilePacket(file.path, file.code).send()

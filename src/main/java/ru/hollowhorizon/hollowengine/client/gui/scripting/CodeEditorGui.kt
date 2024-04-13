@@ -8,17 +8,25 @@ class CodeEditorGui: HollowScreen() {
     init {
         RequestTreePacket().send()
     }
+    var shouldClose = false
 
     override fun render(pPoseStack: PoseStack, pMouseX: Int, pMouseY: Int, pPartialTick: Float) {
         ImguiHandler.drawFrame {
             CodeEditor.draw()
+            if(shouldClose) onClose()
         }
     }
 
     override fun onClose() {
-        super.onClose()
+        if(!shouldClose) {
+            CodeEditor.shouldClose = true
+            shouldClose = true
+            return
+        }
 
+        super.onClose()
         CodeEditor.onClose()
+        shouldClose = false
     }
 
     override fun isPauseScreen() = false
