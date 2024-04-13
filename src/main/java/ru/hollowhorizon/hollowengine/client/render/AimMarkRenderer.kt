@@ -24,6 +24,9 @@ object AimMarkRenderer {
     fun renderWorldLast(event: RenderLevelStageEvent) {
         if (event.stage == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             val player = Minecraft.getInstance().player ?: return
+
+            if(!player.isAlive) return
+
             val stack = event.poseStack
 
             val marks = player[PlayerStoryCapability::class].aimMarks
