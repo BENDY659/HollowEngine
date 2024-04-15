@@ -589,6 +589,16 @@ abstract class IContextBuilder {
         }
     }
 
+    @JvmName("playerSend")
+    infix fun Safe<List<ServerPlayer>>.send(text: () -> String) = sendComponent { text().mcTranslate }
+
+    @JvmName("playerSendComponent")
+    open infix fun Safe<List<ServerPlayer>>.sendComponent(text: () -> Component) = +SimpleNode {
+        this@sendComponent().forEach {
+            it.sendSystemMessage(text())
+        }
+    }
+
     @JvmName("playerSay")
     infix fun Safe<List<ServerPlayer>>.say(text: () -> String) = sayComponent { text().mcTranslate }
 
