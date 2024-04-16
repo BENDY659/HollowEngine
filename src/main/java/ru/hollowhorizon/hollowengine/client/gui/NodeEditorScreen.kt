@@ -1,18 +1,49 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2024 HollowHorizon
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package ru.hollowhorizon.hollowengine.client.gui
 
 import com.mojang.blaze3d.vertex.PoseStack
 import imgui.ImGui
+import imgui.extension.imnodes.ImNodes
 import imgui.extension.imnodes.ImNodesContext
+import imgui.extension.imnodes.flag.ImNodesMiniMapLocation
+import imgui.extension.imnodes.flag.ImNodesPinShape
 import imgui.extension.nodeditor.NodeEditor
 import imgui.extension.nodeditor.NodeEditorContext
 import imgui.extension.nodeditor.flag.NodeEditorPinKind
+import imgui.flag.ImGuiCond
+import imgui.flag.ImGuiMouseButton
 import imgui.type.ImFloat
-import imgui.type.ImLong
 import imgui.type.ImString
 import kotlinx.serialization.Serializable
 import ru.hollowhorizon.hc.api.utils.Polymorphic
 import ru.hollowhorizon.hc.client.imgui.ImguiHandler
 import ru.hollowhorizon.hc.client.screens.HollowScreen
+import java.awt.Desktop
+import java.net.URI
+
 
 class NodeEditorScreen : HollowScreen() {
 
@@ -23,93 +54,107 @@ class NodeEditorScreen : HollowScreen() {
     override fun render(pPoseStack: PoseStack, pMouseX: Int, pMouseY: Int, pPartialTick: Float) {
 
         ImguiHandler.drawFrame {
-            NodeEditor.setCurrentEditor(context)
-            NodeEditor.begin("Редактор Узлов")
+            ImGui.setNextWindowSize(500f, 400f, ImGuiCond.Once)
+            ImGui.setNextWindowPos(
+                ImGui.getMainViewport().posX + 100,
+                ImGui.getMainViewport().posY + 100,
+                ImGuiCond.Once
+            )
+            if (ImGui.begin("ImNodes Demo")) {
+                ImGui.text("This a demo graph editor for ImNodes")
 
-            for (node in graph.nodes.values) {
-                if (node !is Graph.Node) continue
-
-                NodeEditor.beginNode(node.nodeId.toLong())
-
-                node.render()
-
-                NodeEditor.endNode()
-            }
-
-            if (NodeEditor.beginCreate()) {
-                val a = ImLong()
-                val b = ImLong()
-                if (NodeEditor.queryNewLink(a, b)) {
-                    val source = graph.findByOutput(a.get())
-                    val target = graph.findByInput(b.get())
-                    if (source != null && target != null && !source.outputNodes.contains(target.nodeId) && NodeEditor.acceptNewItem()) {
-                        source.outputNodes.add(target.nodeId)
+                ImGui.alignTextToFramePadding()
+                ImGui.text("Repo:")
+                ImGui.sameLine()
+                if (ImGui.button(URL)) {
+                    try {
+                        Desktop.getDesktop().browse(URI(URL))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
-            }
-            NodeEditor.endCreate()
 
-            var uniqueLinkId = 1
-            for (node in graph.nodes.values) {
-                if (node !is Graph.Node) continue
-                for (outputNodeId in node.outputNodes) {
-                    val outputNode = graph.nodes[outputNodeId] ?: continue
-                    if (outputNode !is Graph.Node) continue
-                    NodeEditor.link(uniqueLinkId++.toLong(), node.outputPinId.toLong(), outputNode.inputPinId.toLong())
-                    uniqueLinkId++
+                ImNodes.editorContextSet(nodeContext)
+                ImNodes.beginNodeEditor()
+
+                for (node in graph.nodes.values.map { it as Graph.Node }) {
+                    ImNodes.beginNode(node.nodeId)
+
+                    ImNodes.beginNodeTitleBar()
+                    ImGui.text(node.name)
+                    ImNodes.endNodeTitleBar()
+
+                    ImNodes.beginInputAttribute(node.inputPinId, ImNodesPinShape.CircleFilled)
+                    ImGui.text("In")
+                    ImNodes.endInputAttribute()
+
+                    ImGui.sameLine()
+
+                    ImNodes.beginOutputAttribute(node.outputPinId)
+                    ImGui.text("Out")
+                    ImNodes.endOutputAttribute()
+
+                    node.render()
+
+                    ImNodes.endNode()
                 }
-            }
 
-            NodeEditor.suspend()
+                var uniqueLinkId = 1
+                for (node in graph.nodes.values.map { it as Graph.Node }) {
+                    if (graph.nodes.containsKey(node.outputPinId)) {
+                        ImNodes.link(
+                            uniqueLinkId++,
+                            node.outputPinId,
+                            (graph.nodes[node.outputNodes[node.outputPinId]] as Graph.Node).nodeId
+                        )
+                    }
+                }
 
-            val nodeWithContextMenu = NodeEditor.getNodeWithContextMenu()
-            if (nodeWithContextMenu >= 0) {
-                ImGui.openPopup("node_context")
-                ImGui.getStateStorage().setInt(ImGui.getID("delete_node_id"), nodeWithContextMenu.toInt())
-            }
+                val isEditorHovered = ImNodes.isEditorHovered()
 
-            if (ImGui.isPopupOpen("node_context")) {
-                val targetNode = ImGui.getStateStorage().getInt(ImGui.getID("delete_node_id"))
-                if (ImGui.beginPopup("node_context")) {
-                    if (ImGui.button("Удалить " + (graph.nodes[targetNode] as? Graph.Node)?.name)) {
-                        graph.nodes.remove(targetNode)
+                ImNodes.miniMap(0.2f, ImNodesMiniMapLocation.BottomRight)
+                ImNodes.endNodeEditor()
+
+//                if (ImNodes.isLinkCreated(LINK_A, LINK_B)) {
+//                    val source: Graph.Node? = graph.findByOutput(LINK_A.get())
+//                    val target: Graph.Node? = graph.findByInput(LINK_B.get())
+//                    if (source != null && target != null && source.outputNodeId !== target.nodeId) {
+//                        source.outputNodeId = target.nodeId
+//                    }
+//                }
+
+
+                if (ImGui.isMouseClicked(ImGuiMouseButton.Right)) {
+                    val hoveredNode = ImNodes.getHoveredNode()
+                    if (hoveredNode != -1) {
+                        ImGui.openPopup("node_context")
+                        ImGui.getStateStorage().setInt(ImGui.getID("delete_node_id"), hoveredNode)
+                    } else if (isEditorHovered) {
+                        ImGui.openPopup("node_editor_context")
+                    }
+                }
+
+                if (ImGui.isPopupOpen("node_context")) {
+                    val targetNode = ImGui.getStateStorage().getInt(ImGui.getID("delete_node_id"))
+                    if (ImGui.beginPopup("node_context")) {
+                        if (ImGui.button("Delete ")) {
+                            graph.nodes.remove(targetNode)
+                            ImGui.closeCurrentPopup()
+                        }
+                        ImGui.endPopup()
+                    }
+                }
+
+                if (ImGui.beginPopup("node_editor_context")) {
+                    if (ImGui.button("Create New Node")) {
+                        val node: Graph.Node = graph.createGraphNode(::NPCNode)
+                        ImNodes.setNodeScreenSpacePos(node.nodeId, ImGui.getMousePosX(), ImGui.getMousePosY())
                         ImGui.closeCurrentPopup()
                     }
                     ImGui.endPopup()
                 }
             }
-
-            if (NodeEditor.showBackgroundContextMenu()) {
-                ImGui.openPopup("node_editor_context")
-            }
-
-            if (ImGui.beginPopup("node_editor_context")) {
-                if (ImGui.button("Создать персонажа")) {
-                    val node = graph.createGraphNode { id, input, output -> NPCNode(id, input, output) }
-                    val canvasX = NodeEditor.toCanvasX(ImGui.getMousePosX())
-                    val canvasY = NodeEditor.toCanvasY(ImGui.getMousePosY())
-                    NodeEditor.setNodePosition(node.nodeId.toLong(), canvasX, canvasY)
-                    ImGui.closeCurrentPopup()
-                }
-                if (ImGui.button("Идти к блоку")) {
-                    val node = graph.createGraphNode { id, input, output -> MoveToBlockNode(id, input, output) }
-                    val canvasX = NodeEditor.toCanvasX(ImGui.getMousePosX())
-                    val canvasY = NodeEditor.toCanvasY(ImGui.getMousePosY())
-                    NodeEditor.setNodePosition(node.nodeId.toLong(), canvasX, canvasY)
-                    ImGui.closeCurrentPopup()
-                }
-                if (ImGui.button("Сказать")) {
-                    val node = graph.createGraphNode { id, input, output -> SayNode(id, input, output) }
-                    val canvasX = NodeEditor.toCanvasX(ImGui.getMousePosX())
-                    val canvasY = NodeEditor.toCanvasY(ImGui.getMousePosY())
-                    NodeEditor.setNodePosition(node.nodeId.toLong(), canvasX, canvasY)
-                    ImGui.closeCurrentPopup()
-                }
-                ImGui.endPopup()
-            }
-
-            NodeEditor.resume()
-            NodeEditor.end()
+            ImGui.end()
         }
     }
 }
@@ -157,21 +202,9 @@ class Graph {
         var width = 200f
 
         fun render() {
-            ImGui.text(name)
-
             ImGui.pushID(nodeId)
             renderNode()
             ImGui.popID()
-
-            NodeEditor.beginPin(inputPinId.toLong(), NodeEditorPinKind.Input)
-            ImGui.text(">")
-            NodeEditor.endPin()
-            ImGui.sameLine()
-
-            ImGui.setCursorPosX(ImGui.getCursorPosX() + width - 10f)
-            NodeEditor.beginPin(outputPinId.toLong(), NodeEditorPinKind.Output)
-            ImGui.text("<")
-            NodeEditor.endPin()
         }
 
         open fun renderNode() {
