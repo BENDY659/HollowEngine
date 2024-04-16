@@ -51,9 +51,9 @@ public class PauseScreenMixin extends Screen {
             return Unit.INSTANCE;
         }));
 
-        addRenderableWidget(new ScaleableButton(5, 25, 20, 20, "hollowengine:textures/gui/hollowengine.png", "HollowEngine: Nodes", button -> {
-            Minecraft.getInstance().setScreen(new NodeEditorScreen());
-            return Unit.INSTANCE;
-        }));
+//        addRenderableWidget(new ScaleableButton(5, 25, 20, 20, "hollowengine:textures/gui/hollowengine.png", "HollowEngine: Nodes", button -> {
+//            Minecraft.getInstance().setScreen(new NodeEditorScreen());
+//            return Unit.INSTANCE;
+//        }));
     }
 }
