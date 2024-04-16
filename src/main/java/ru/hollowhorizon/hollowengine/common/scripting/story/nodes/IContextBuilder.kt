@@ -176,6 +176,7 @@ abstract class IContextBuilder {
 
     fun Safe<NPCEntity>.despawn() {
         next {
+            if(!this@despawn.isLoaded) return@next
             val npc = this@despawn()
             val activeNpcs = npc.level[StoriesCapability::class].activeNpcs
             activeNpcs.remove(npc.uuid.toString())
