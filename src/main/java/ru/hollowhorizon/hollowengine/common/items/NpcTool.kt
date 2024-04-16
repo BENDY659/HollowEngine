@@ -32,6 +32,7 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.InteractionResultHolder
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.entity.projectile.ProjectileUtil
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
@@ -44,6 +45,7 @@ import ru.hollowhorizon.hollowengine.client.gui.NPCCreatorGui
 import ru.hollowhorizon.hollowengine.client.screen.npcs.ModelEditScreen
 import ru.hollowhorizon.hollowengine.common.entities.NPCEntity
 import ru.hollowhorizon.hollowengine.common.tabs.HOLLOWENGINE_TAB
+
 
 class NpcTool : Item(Properties().tab(HOLLOWENGINE_TAB).stacksTo(1)) {
     override fun interactLivingEntity(
@@ -61,11 +63,17 @@ class NpcTool : Item(Properties().tab(HOLLOWENGINE_TAB).stacksTo(1)) {
 
     override fun use(pLevel: Level, pPlayer: Player, pUsedHand: InteractionHand): InteractionResultHolder<ItemStack> {
         if (!pLevel.isClientSide && pUsedHand == InteractionHand.MAIN_HAND) {
-            val result = pPlayer.pick(5.0, 0f, false)
+            val start: Vec3 = pPlayer.eyePosition
+            val addition: Vec3 = pPlayer.lookAngle.multiply(Vec3(25.0, 25.0, 25.0))
+            val result = ProjectileUtil.getEntityHitResult(
+                pPlayer.level, pPlayer,
+                start, start.add(addition),
+                pPlayer.boundingBox.expandTowards(addition).inflate(1000000.0)
+            ) { true }
 
             if (result is EntityHitResult) return super.use(pLevel, pPlayer, pUsedHand)
 
-            val pos = result.location
+            val pos = pPlayer.pick(25.0, 0f, false).location
 
             OpenEditorScreen(pos).send(pPlayer as ServerPlayer)
         }

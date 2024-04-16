@@ -100,7 +100,7 @@ class SaveFilePacket(val path: String, val text: String) : HollowPacketV3<SaveFi
         val file = data.path.fromReadablePath()
         if (file.exists()) {
             file.writeText(data.text)
-            UpdateFilePacket(data.path, data.text).send(*player.server!!.playerList.players.toTypedArray())
+            UpdateFilePacket(data.path, data.text).send(*player.server!!.playerList.players.filter { it != player }.toTypedArray())
         }
     }
 
