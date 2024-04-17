@@ -404,7 +404,15 @@ abstract class IContextBuilder {
         next {
             val tp = TeleportContainer().apply(target)
             val teleport = tp.pos
-            this@tpTo().teleportTo(teleport.x, teleport.y, teleport.z)
+            val world = manager.server.levelKeys().find { it.location() == tp.world.rl } ?: throw IllegalStateException("Dimension ${tp.world} not found!")
+            val level = manager.server.getLevel(world) ?: throw IllegalStateException("Dimension ${tp.world} can't be loaded!")
+            this@tpTo().apply {
+                if(this.level != level) changeDimension(level)
+                teleportTo(teleport.x, teleport.y, teleport.z)
+                xRot = tp.vec.x
+                yHeadRot = tp.vec.y
+                yRot = tp.vec.y
+            }
         }
     }
 
@@ -413,7 +421,9 @@ abstract class IContextBuilder {
         next {
             val tp = TeleportContainer().apply(target)
             val teleport = tp.pos
-            this@tpTo().forEach { it.teleportTo(teleport.x, teleport.y, teleport.z) }
+            val world = manager.server.levelKeys().find { it.location() == tp.world.rl } ?: throw IllegalStateException("Dimension ${tp.world} not found!")
+            val level = manager.server.getLevel(world) ?: throw IllegalStateException("Dimension ${tp.world} can't be loaded!")
+            this@tpTo().forEach { it.teleportTo(level, teleport.x, teleport.y, teleport.z, tp.vec.x, tp.vec.y) }
         }
     }
 

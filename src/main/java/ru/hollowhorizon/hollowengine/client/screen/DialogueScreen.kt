@@ -87,7 +87,7 @@ object DialogueScreen : HollowScreen("".mcText), IAutoScaled {
 
         this.textBox = addRenderableWidget(
             DialogueTextBox(
-                0, height - 50, width, 50
+                50, height - 50, width - 100, 50
             )
         )
         textBox?.text = CLIENT_OPTIONS.text
