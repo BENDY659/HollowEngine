@@ -200,9 +200,12 @@ class StopScriptPacket(val path: String) : HollowPacketV3<StopScriptPacket> {
 class ScriptErrorPacket(val script: String, val errors: List<ScriptError>) : HollowPacketV3<ScriptErrorPacket> {
     override fun handle(player: Player, data: ScriptErrorPacket) {
         if (CodeEditor.currentFile == script) {
-            val errors = errors.filter { it.severity == Severity.ERROR || it.severity == Severity.FATAL }
-                .associate { it.line to "${it.message} at column: ${it.column} " }
-            CodeEditor.editor.setErrorMarkers(errors)
+            val errorMap = hashMapOf<Int, MutableList<String>>()
+            errors.filter { it.severity == Severity.ERROR || it.severity == Severity.FATAL }
+                .forEach {
+                    errorMap.computeIfAbsent(it.line) { mutableListOf() }.add("${it.message} at column: ${it.column}.")
+                }
+            CodeEditor.editor.setErrorMarkers(errorMap.mapValues { it.value.joinToString("\n") })
         }
     }
 }
