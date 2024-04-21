@@ -151,7 +151,7 @@ object CodeEditor {
 
         ImGui.begin(
             "Code Editor",
-            ImGuiWindowFlags.NoMove or ImGuiWindowFlags.NoResize or ImGuiWindowFlags.NoCollapse or ImGuiWindowFlags.NoTitleBar or ImGuiWindowFlags.NoScrollbar
+            ImGuiWindowFlags.NoMove or ImGuiWindowFlags.NoResize or ImGuiWindowFlags.NoCollapse or ImGuiWindowFlags.NoTitleBar
         )
 
         if (currentPath.endsWith(".kts")) {
