@@ -59,7 +59,9 @@ class NpcDelegate(
         level.getEntity(entityUUID ?: return@Safe null) as? NPCEntity
     }
 
-    override fun init() {
+    fun spawn() {
+        if(entityUUID != null) return
+
         check(ResourceLocation.isValidResourceLocation(settings.model)) { "Invalid model path: ${settings.model}" }
 
         val dimension = manager.server.levelKeys().find { it.location() == settings.world.rl }
@@ -76,8 +78,6 @@ class NpcDelegate(
             }
             return
         }
-
-        if (entityUUID != null) return
 
         val entity = NPCEntity(level).apply {
             setPos(settings.pos.x, settings.pos.y, settings.pos.z)
@@ -122,6 +122,7 @@ class NpcDelegate(
     }
 
     override fun tick(): Boolean {
+        spawn()
         return !property.isLoaded
     }
 

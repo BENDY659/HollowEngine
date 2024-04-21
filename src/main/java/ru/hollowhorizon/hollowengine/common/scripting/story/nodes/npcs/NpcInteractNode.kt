@@ -61,7 +61,7 @@ class NpcInteractNode(val npc: Safe<NPCEntity>) : Node() {
     }
 
     override fun deserializeNBT(nbt: CompoundTag) {
-        hasInteracted = nbt.getBoolean("hasInteracted")
+        hasInteracted = false
         isStarted = false
     }
 }
