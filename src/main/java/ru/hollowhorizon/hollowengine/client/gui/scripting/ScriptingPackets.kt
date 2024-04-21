@@ -46,8 +46,11 @@ import ru.hollowhorizon.kotlinscript.common.events.Severity
 class RequestFilePacket(val path: String) : HollowPacketV3<RequestFilePacket> {
     override fun handle(player: Player, data: RequestFilePacket) {
         if (player.hasPermissions(2)) {
-            val file = data.path.fromReadablePath().readText()
-            UpdateFilePacket(data.path, file).send(player as ServerPlayer)
+            val fileTypes = setOf(".kts", ".json", ".txt", ".mcfunction", ".md")
+            if (fileTypes.any { data.path.endsWith(it) }) {
+                val file = data.path.fromReadablePath().readText()
+                UpdateFilePacket(data.path, file).send(player as ServerPlayer)
+            }
         } else {
             player.sendSystemMessage("You don't have permissions to open scripts!".mcText)
         }
@@ -100,7 +103,8 @@ class SaveFilePacket(val path: String, val text: String) : HollowPacketV3<SaveFi
         val file = data.path.fromReadablePath()
         if (file.exists()) {
             file.writeText(data.text)
-            UpdateFilePacket(data.path, data.text).send(*player.server!!.playerList.players.filter { it != player }.toTypedArray())
+            UpdateFilePacket(data.path, data.text).send(*player.server!!.playerList.players.filter { it != player }
+                .toTypedArray())
         }
     }
 
@@ -154,7 +158,7 @@ class CreateFilePacket(val path: String) : HollowPacketV3<CreateFilePacket> {
                 else file.createNewFile()
 
                 val tree = CodeEditor.tree(DirectoryManager.HOLLOW_ENGINE)
-                    LoadTreePacket(tree).send(*player.server!!.playerList.players.toTypedArray())
+                LoadTreePacket(tree).send(*player.server!!.playerList.players.toTypedArray())
 
             }
         } else {
