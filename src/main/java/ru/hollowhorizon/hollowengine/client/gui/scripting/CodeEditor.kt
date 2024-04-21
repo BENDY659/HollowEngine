@@ -35,12 +35,15 @@ import imgui.type.ImString
 import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
 import net.minecraftforge.fml.ModList
+import net.minecraftforge.registries.ForgeRegistries
+import org.lwjgl.glfw.GLFW
 import ru.hollowhorizon.hc.client.handlers.TickHandler
+import ru.hollowhorizon.hc.client.imgui.FontAwesomeIcons
 import ru.hollowhorizon.hc.client.utils.rl
 import ru.hollowhorizon.hc.client.utils.toTexture
 import ru.hollowhorizon.hollowengine.client.gui.height
 import ru.hollowhorizon.hollowengine.client.gui.width
-import ru.hollowhorizon.hollowengine.common.files.DirectoryManager
+import ru.hollowhorizon.hollowengine.client.utils.roundTo
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager.toReadablePath
 import java.io.File
 
@@ -172,22 +175,25 @@ object CodeEditor {
         ImGui.beginTabBar("##Files")
         files.forEach { file ->
             if (ImGui.beginTabItem(file.name, file.open, ImGuiTabItemFlags.None)) {
-                if(currentFile != file.name) {
+                if (currentFile != file.name) {
                     editor.text = file.code
                 }
                 currentFile = file.name
                 currentPath = file.path
                 editor.render("Code Editor")
-                if(shouldClose) {
+
+                drawScriptPopup()
+
+                if (shouldClose) {
                     ImGui.setKeyboardFocusHere(-1)
-                    shouldClose = false
                 }
                 if (editor.isTextChanged) {
                     file.code = editor.text.substringBeforeLast("\n")
                     SaveFilePacket(file.path, file.code).send()
                 }
-
-
+                if (ImGui.isItemHovered() && ImGui.isMouseClicked(1)) {
+                    ImGui.openPopup("ScriptPopup")
+                }
 
                 ImGui.endTabItem()
             }
@@ -196,6 +202,15 @@ object CodeEditor {
         ImGui.end()
 
         drawModalInput()
+
+        if (shouldClose) {
+            ImGui.setMouseCursor(0)
+            GLFW.glfwSetCursor(
+                Minecraft.getInstance().window.window,
+                GLFW.glfwCreateStandardCursor(GLFW.GLFW_ARROW_CURSOR)
+            )
+            shouldClose = false
+        }
     }
 
     fun drawTree(tree: Tree) {
@@ -206,7 +221,7 @@ object CodeEditor {
         drawFilePopup(tree.path)
         var hovered = false
         var ignore = false
-        if (ImGui.treeNodeEx(tree.value, flags)) {
+        if (ImGui.treeNodeEx(icon(tree.drawArrow, tree.value.substringAfterLast(".")) + " " + tree.value, flags)) {
             hovered = ImGui.isItemHovered()
             tree.children.forEach { drawTree(it) }
 
@@ -223,6 +238,64 @@ object CodeEditor {
         if (ImGui.isItemActivated() && ImGui.isMouseDoubleClicked(0) && !tree.drawArrow) {
             RequestFilePacket(tree.path).send()
         }
+    }
+
+    private fun icon(isFolder: Boolean, ext: String): String {
+        return if (isFolder) FontAwesomeIcons.Folder
+        else when (ext) {
+            "kts" -> FontAwesomeIcons.FileCode
+            "json", "txt", "mcfunction", "md" -> FontAwesomeIcons.FileAlt
+            "jar", "zip" -> FontAwesomeIcons.FileArchive
+            "png", "jpg", "jpeg" -> FontAwesomeIcons.FileImage
+            "mp3", "wav", "ogg" -> FontAwesomeIcons.FileAudio
+            else -> FontAwesomeIcons.File
+        }
+    }
+
+    fun drawScriptPopup() {
+        val player = Minecraft.getInstance().player ?: return
+
+        if (ImGui.beginPopup("ScriptPopup")) {
+            if (ImGui.menuItem("Вставить ваши координаты")) {
+                val loc = player.position()
+                val text = "pos(${loc.x.roundTo(2)}, ${loc.y.roundTo(2)}, ${loc.z.roundTo(2)})"
+                insertAtCursor(text)
+                ImGui.closeCurrentPopup()
+            }
+            if (ImGui.menuItem("Вставить координаты взгляда")) {
+                val loc = player.pick(100.0, 0.0f, true).location
+                val text = "pos(${loc.x.roundTo(2)}, ${loc.y.roundTo(2)}, ${loc.z.roundTo(2)})"
+                insertAtCursor(text)
+                ImGui.closeCurrentPopup()
+            }
+            if (ImGui.menuItem("Вставить предмет главной руки")) {
+                val item = player.getMainHandItem()
+                val location = "\"" + ForgeRegistries.ITEMS.getKey(item.item).toString() + "\""
+                val count = item.count
+                val nbt = if (item.hasTag()) item.getOrCreateTag() else null
+                val text = when {
+                    nbt == null && count > 1 -> "item($location, $count)"
+                    nbt == null && count == 1 -> "item($location)"
+                    else -> {
+                        "item($location, $count, \"${
+                            nbt.toString()
+                                .replace("\"", "\\\"")
+                        }\")"
+                    }
+                }
+                insertAtCursor(text)
+                ImGui.closeCurrentPopup()
+            }
+            ImGui.endPopup()
+        }
+    }
+
+    private fun insertAtCursor(text: String) {
+        if (editor.hasSelection()) {
+            editor.text = editor.text.substringBeforeLast("\n").replace(editor.selectedText, text)
+            editor.setSelectionStart(0, 0)
+            editor.setSelectionEnd(0, 0)
+        } else editor.insertText(text)
     }
 
     fun drawFolderPopup(folder: String) {
@@ -295,7 +368,7 @@ object CodeEditor {
                 if (ImGui.button("Да", 120f, 0f)) {
                     inputAction = -1
                     files.removeIf { it.path.startsWith(selectedPath) }
-                    if(selectedPath.isNotEmpty()) DeleteFilePacket(selectedPath).send()
+                    if (selectedPath.isNotEmpty()) DeleteFilePacket(selectedPath).send()
                     ImGui.closeCurrentPopup()
                     input.set("")
                 }
@@ -311,11 +384,12 @@ object CodeEditor {
                 if (ImGui.button("OK", 120f, 0f)) {
                     val input = input.get()
 
-                    when(inputAction) {
+                    when (inputAction) {
                         0 -> {
                             RenameFilePacket(selectedPath, input).send()
                             files.removeIf { it.path == selectedPath }
                         }
+
                         2 -> CreateFilePacket("$selectedPath/$input").send()
                         3 -> CreateFilePacket("$selectedPath/$input.se.kts").send()
                         4 -> CreateFilePacket("$selectedPath/$input.content.kts").send()
@@ -346,7 +420,6 @@ object CodeEditor {
 
     fun onClose() {
         files.forEach { SaveFilePacket(it.path, it.code).send() }
-        files.clear()
     }
 }
 
