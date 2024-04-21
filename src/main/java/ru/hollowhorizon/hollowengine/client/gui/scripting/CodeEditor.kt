@@ -181,17 +181,26 @@ object CodeEditor {
                 currentPath = file.path
                 editor.render("Code Editor")
 
-                drawScriptPopup()
+                if (ImGui.beginDragDropTarget()) {
+                    val payload = ImGui.acceptDragDropPayload<Any?>("TREE")
+                    if (payload != null) {
+                        val data = payload.toString().substringAfter('/').replaceFirst('/', ':')
+                        insertAtCursor("\"$data\"")
+                    }
+                    ImGui.endDragDropTarget()
+                }
 
                 if (shouldClose) {
                     ImGui.setKeyboardFocusHere(-1)
                 }
                 if (editor.isTextChanged) {
                     val text = editor.currentLineText
-                    if (editor.cursorPositionColumn - 1 in 0 .. text.length) complete(text[editor.cursorPositionColumn - 1])
+                    if (editor.cursorPositionColumn - 1 in 0..text.length) complete(text[editor.cursorPositionColumn - 1])
                     file.code = editor.text.substringBeforeLast("\n")
                     SaveFilePacket(file.path, file.code).send()
                 }
+
+                drawScriptPopup()
                 if (ImGui.isItemHovered() && ImGui.isMouseClicked(1)) {
                     ImGui.openPopup("ScriptPopup")
                 }
@@ -221,7 +230,7 @@ object CodeEditor {
         val chars = setOf('(', '{', '[')
         val completeChars = arrayOf(')', '}', ']')
 
-        if(c in chars) {
+        if (c in chars) {
             editor.insertText(completeChars[chars.indexOf(c)].toString())
             editor.setCursorPosition(editor.cursorPositionLine, editor.cursorPositionColumn - 1)
         }
@@ -247,6 +256,13 @@ object CodeEditor {
             selectedPath = tree.path
             if (tree.drawArrow) ImGui.openPopup("FolderTreePopup##" + tree.path)
             else ImGui.openPopup("FileTreePopup##" + tree.path)
+        }
+        if ((tree.path.startsWith("assets") || tree.path.startsWith("data")) && ImGui.beginDragDropSource()) {
+            ImGui.setDragDropPayload("TREE", tree.path, ImGuiCond.Once)
+            ImGui.pushItemWidth(350f)
+            ImGui.text(tree.path.substringAfter('/').replaceFirst('/', ':'))
+            ImGui.popItemWidth()
+            ImGui.endDragDropSource()
         }
 
         if (ImGui.isItemActivated() && ImGui.isMouseDoubleClicked(0) && !tree.drawArrow) {
@@ -300,7 +316,7 @@ object CodeEditor {
                 insertAtCursor(text)
                 ImGui.closeCurrentPopup()
             }
-            if(ImGui.menuItem(FontAwesomeIcons.Toolbox + " Выбрать предмет из инвентаря")) {
+            if (ImGui.menuItem(FontAwesomeIcons.Toolbox + " Выбрать предмет из инвентаря")) {
                 insertAtCursor("Это сложно, сделаю позже :)")
                 ImGui.closeCurrentPopup()
             }
