@@ -39,15 +39,14 @@ data class InputContainer(
 
 class InputNode(vararg val values: String, val players: Safe<List<ServerPlayer>>) :
     ForgeEventNode<ServerChatEvent.Submitted>(ServerChatEvent.Submitted::class.java, { true }),
-    ReadWriteProperty<Any?, InputContainer> {
-    val container = InputContainer()
+    ReadWriteProperty<Any?, String> {
     var hasPlayer = false
+    var message = ""
     override val action = { event: ServerChatEvent.Submitted ->
         val player = event.player
 
-        container.player.data = { listOf(player) }
         hasPlayer = true
-        container.message = event.message.string
+        message = event.message.string
 
         val isValidPlayer = player in players()
 
@@ -56,25 +55,20 @@ class InputNode(vararg val values: String, val players: Safe<List<ServerPlayer>>
 
     override fun serializeNBT(): CompoundTag {
         return super.serializeNBT().apply {
-            putString("message", container.message)
-            if (hasPlayer) container.player.invoke().firstOrNull()?.uuid.let { putUUID("player", it) }
-        }
+            putString("message", message)
+            }
     }
 
     override fun deserializeNBT(nbt: CompoundTag) {
         super.deserializeNBT(nbt)
-        container.message = nbt.getString("message")
-        container.player.data = {
-            listOf(nbt.getUUID("player").let { uuid -> players().firstOrNull { it.uuid == uuid } } as ServerPlayer)
-        }
+        message = nbt.getString("message")
     }
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>): InputContainer {
-        return container
+    override fun getValue(thisRef: Any?, property: KProperty<*>): String {
+        return message
     }
 
-    override fun setValue(thisRef: Any?, property: KProperty<*>, value: InputContainer) {
-        container.message = value.message
-        container.player = value.player
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
+        message = value
     }
 }
