@@ -27,11 +27,15 @@ package ru.hollowhorizon.hollowengine.client.gui.scripting
 import imgui.type.ImBoolean
 import kotlinx.serialization.Serializable
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.server.commands.ReloadCommand
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Player
 import org.apache.commons.io.FileUtils
+import ru.hollowhorizon.hc.HollowCore
 import ru.hollowhorizon.hc.client.utils.colored
 import ru.hollowhorizon.hc.client.utils.mcText
+import ru.hollowhorizon.hc.client.utils.mcTranslate
 import ru.hollowhorizon.hc.client.utils.plus
 import ru.hollowhorizon.hc.common.network.HollowPacketV2
 import ru.hollowhorizon.hc.common.network.HollowPacketV3
@@ -40,6 +44,7 @@ import ru.hollowhorizon.hollowengine.common.files.DirectoryManager
 import ru.hollowhorizon.hollowengine.common.files.DirectoryManager.fromReadablePath
 import ru.hollowhorizon.hollowengine.common.scripting.story.runScript
 import ru.hollowhorizon.kotlinscript.common.events.Severity
+import java.util.function.Function
 
 @HollowPacketV2(HollowPacketV2.Direction.TO_SERVER)
 @Serializable
@@ -176,7 +181,19 @@ class RunScriptPacket(val path: String) : HollowPacketV3<RunScriptPacket> {
             val server = player.server!!
             val file = data.path.fromReadablePath()
 
-            runScript(server, file, true)
+            if(file.path.endsWith(".mod.kts") || file.path.endsWith(".content.kts")) {
+                val packs = server.packRepository.selectedPacks.map { it.id }
+
+                server.reloadResources(packs)
+                    .exceptionally { error: Throwable ->
+                        HollowCore.LOGGER.warn("Failed to execute reload", error)
+                        player.sendSystemMessage(Component.translatable("commands.reload.failure"))
+                        null
+                    }
+                    .thenApply {
+                        player.sendSystemMessage("[Hollow Engine]".mcText.colored(0xEBA434) + " Ресурсы и скрипты успешно перегружены!".mcText.colored(0x34eb34))
+                    }
+            } else runScript(server, file, true)
         } else {
             player.sendSystemMessage("You don't have permissions to run scripts!".mcText)
         }
@@ -219,10 +236,18 @@ class ScriptStartedPacket(val script: String) : HollowPacketV3<ScriptStartedPack
             if (Minecraft.getInstance().screen is CodeEditorGui) {
                 (Minecraft.getInstance().screen as CodeEditorGui).onClose()
             }
-            player.sendSystemMessage(
-                "[HollowEngine] ".mcText.colored(0xEBA434) +
-                        "Скрипт успешно запущен!".mcText.colored(0x34eb34)
-            )
+
+            if(script.endsWith(".mod.kts") || script.endsWith(".content.kts")) {
+                player.sendSystemMessage(
+                    "[Hollow Engine] ".mcText.colored(0xEBA434) +
+                            "Скрипт успешно запущен, перезагрузка ресурсов.".mcText.colored(0x34eb34)
+                )
+            } else {
+                player.sendSystemMessage(
+                    "[Hollow Engine] ".mcText.colored(0xEBA434) +
+                            "Скрипт успешно запущен!".mcText.colored(0x34eb34)
+                )
+            }
         }
     }
 }

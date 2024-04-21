@@ -55,6 +55,7 @@ object CodeEditor {
     val editor = TextEditor().apply {
         setLanguageDefinition(KOTLIN_LANG)
 
+        tabSize = 4
         text = """
             val npc by NPCEntity.creating {
                 model = "hollowengine:models/model.gltf"
@@ -126,8 +127,6 @@ object CodeEditor {
             imgui.internal.ImGui.dockBuilderDockWindow("File Tree", leftDockID.get())
             imgui.internal.ImGui.dockBuilderDockWindow("Code Editor", rightDockID.get())
 
-            //
-
             imgui.internal.ImGui.dockBuilderFinish(dockspaceID)
         }
 
@@ -152,7 +151,7 @@ object CodeEditor {
 
         ImGui.begin(
             "Code Editor",
-            ImGuiWindowFlags.NoMove or ImGuiWindowFlags.NoResize or ImGuiWindowFlags.NoCollapse or ImGuiWindowFlags.NoTitleBar
+            ImGuiWindowFlags.NoMove or ImGuiWindowFlags.NoResize or ImGuiWindowFlags.NoCollapse or ImGuiWindowFlags.NoTitleBar or ImGuiWindowFlags.NoScrollbar
         )
 
         if (currentPath.endsWith(".kts")) {
@@ -188,6 +187,8 @@ object CodeEditor {
                     ImGui.setKeyboardFocusHere(-1)
                 }
                 if (editor.isTextChanged) {
+                    val text = editor.currentLineText
+                    if (editor.cursorPositionColumn - 1 in 0 .. text.length) complete(text[editor.cursorPositionColumn - 1])
                     file.code = editor.text.substringBeforeLast("\n")
                     SaveFilePacket(file.path, file.code).send()
                 }
@@ -210,6 +211,19 @@ object CodeEditor {
                 GLFW.glfwCreateStandardCursor(GLFW.GLFW_ARROW_CURSOR)
             )
             shouldClose = false
+        }
+    }
+
+    fun complete(c: Char) {
+        if (ImGui.getIO().getKeysDown(ImGui.getIO().getKeyMap(ImGuiKey.Delete))) return
+        if (ImGui.getIO().getKeysDown(ImGui.getIO().getKeyMap(ImGuiKey.Backspace))) return
+
+        val chars = setOf('(', '{', '[')
+        val completeChars = arrayOf(')', '}', ']')
+
+        if(c in chars) {
+            editor.insertText(completeChars[chars.indexOf(c)].toString())
+            editor.setCursorPosition(editor.cursorPositionLine, editor.cursorPositionColumn - 1)
         }
     }
 
@@ -256,19 +270,19 @@ object CodeEditor {
         val player = Minecraft.getInstance().player ?: return
 
         if (ImGui.beginPopup("ScriptPopup")) {
-            if (ImGui.menuItem("Вставить ваши координаты")) {
+            if (ImGui.menuItem(FontAwesomeIcons.Globe + " Вставить ваши координаты")) {
                 val loc = player.position()
                 val text = "pos(${loc.x.roundTo(2)}, ${loc.y.roundTo(2)}, ${loc.z.roundTo(2)})"
                 insertAtCursor(text)
                 ImGui.closeCurrentPopup()
             }
-            if (ImGui.menuItem("Вставить координаты взгляда")) {
+            if (ImGui.menuItem(FontAwesomeIcons.Eye + " Вставить координаты взгляда")) {
                 val loc = player.pick(100.0, 0.0f, true).location
                 val text = "pos(${loc.x.roundTo(2)}, ${loc.y.roundTo(2)}, ${loc.z.roundTo(2)})"
                 insertAtCursor(text)
                 ImGui.closeCurrentPopup()
             }
-            if (ImGui.menuItem("Вставить предмет главной руки")) {
+            if (ImGui.menuItem(FontAwesomeIcons.HandPaper + " Вставить предмет из вашей руки")) {
                 val item = player.getMainHandItem()
                 val location = "\"" + ForgeRegistries.ITEMS.getKey(item.item).toString() + "\""
                 val count = item.count
@@ -286,6 +300,10 @@ object CodeEditor {
                 insertAtCursor(text)
                 ImGui.closeCurrentPopup()
             }
+            if(ImGui.menuItem(FontAwesomeIcons.Toolbox + " Выбрать предмет из инвентаря")) {
+                insertAtCursor("Это сложно, сделаю позже :)")
+                ImGui.closeCurrentPopup()
+            }
             ImGui.endPopup()
         }
     }
@@ -300,12 +318,12 @@ object CodeEditor {
 
     fun drawFolderPopup(folder: String) {
         if (ImGui.beginPopup("FileTreePopup##$folder")) {
-            if (ImGui.menuItem("Переименовать")) {
+            if (ImGui.menuItem(FontAwesomeIcons.Pen + " Переименовать")) {
                 inputAction = 0
                 inputText = "Введите новое название скрипта:"
                 ImGui.closeCurrentPopup()
             }
-            if (ImGui.menuItem("Удалить")) {
+            if (ImGui.menuItem(FontAwesomeIcons.TrashAlt + " Удалить")) {
                 inputAction = 1
                 inputText = "Вы уверены, что хотите\nудалить этот скрипт?"
                 ImGui.closeCurrentPopup()
@@ -316,30 +334,30 @@ object CodeEditor {
 
     fun drawFilePopup(file: String) {
         if (ImGui.beginPopup("FolderTreePopup##$file")) {
-            if (ImGui.menuItem("Создать папку")) {
+            if (ImGui.menuItem(FontAwesomeIcons.Folder + " Создать папку")) {
                 inputAction = 2
                 inputText = "Введите название папки:"
                 ImGui.closeCurrentPopup()
             }
 
-            if (ImGui.menuItem("Создать Сюжетное события")) {
+            if (ImGui.menuItem(FontAwesomeIcons.FileCode + " Создать Сюжетное события")) {
                 inputAction = 3
                 inputText = "Введите название скрипта:"
                 ImGui.closeCurrentPopup()
             }
 
-            if (ImGui.menuItem("Создать Контент-скрипт")) {
+            if (ImGui.menuItem(FontAwesomeIcons.FileCode + " Создать Контент-скрипт")) {
                 inputAction = 4
                 inputText = "Введите название скрипта:"
                 ImGui.closeCurrentPopup()
             }
-            if (ImGui.menuItem("Создать Мод-скрипт")) {
+            if (ImGui.menuItem(FontAwesomeIcons.FileCode + " Создать Мод-скрипт")) {
                 inputAction = 5
                 inputText = "Введите название скрипта:"
                 ImGui.closeCurrentPopup()
             }
 
-            if (ImGui.menuItem("Удалить папку")) {
+            if (ImGui.menuItem(FontAwesomeIcons.TrashAlt + " Удалить папку")) {
                 inputAction = 6
                 inputText = "Вы уверены, что хотите\nудалить эту папку?"
                 ImGui.closeCurrentPopup()
@@ -430,6 +448,7 @@ class Tree(val value: String, val path: String) {
 }
 
 val KOTLIN_LANG = TextEditorLanguageDefinition.c().apply {
+    setPreprocChar('@')
     setKeywords(
         arrayOf(
             "break", "continue", "switch", "case", "try",
