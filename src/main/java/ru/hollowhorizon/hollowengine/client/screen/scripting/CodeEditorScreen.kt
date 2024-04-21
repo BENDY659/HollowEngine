@@ -65,4 +65,6 @@ class CodeEditorScreen : HollowScreen() {
         super.tick()
         editBox?.tick()
     }
+
+    override fun isPauseScreen() = false
 }

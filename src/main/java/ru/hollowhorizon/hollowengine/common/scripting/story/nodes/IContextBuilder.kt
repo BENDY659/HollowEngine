@@ -176,7 +176,7 @@ abstract class IContextBuilder {
 
     fun Safe<NPCEntity>.despawn() {
         next {
-            if(!this@despawn.isLoaded) return@next
+            if (!this@despawn.isLoaded) return@next
             val npc = this@despawn()
             val activeNpcs = npc.level[StoriesCapability::class].activeNpcs
             activeNpcs.remove(npc.uuid.toString())
@@ -404,10 +404,13 @@ abstract class IContextBuilder {
         next {
             val tp = TeleportContainer().apply(target)
             val teleport = tp.pos
-            val world = manager.server.levelKeys().find { it.location() == tp.world.rl } ?: throw IllegalStateException("Dimension ${tp.world} not found!")
-            val level = manager.server.getLevel(world) ?: throw IllegalStateException("Dimension ${tp.world} can't be loaded!")
+            val world = manager.server.levelKeys().find { it.location() == tp.world.rl } ?: throw IllegalStateException(
+                "Dimension ${tp.world} not found!"
+            )
+            val level =
+                manager.server.getLevel(world) ?: throw IllegalStateException("Dimension ${tp.world} can't be loaded!")
             this@tpTo().apply {
-                if(this.level != level) changeDimension(level)
+                if (this.level != level) changeDimension(level)
                 teleportTo(teleport.x, teleport.y, teleport.z)
                 xRot = tp.vec.x
                 yHeadRot = tp.vec.y
@@ -421,8 +424,11 @@ abstract class IContextBuilder {
         next {
             val tp = TeleportContainer().apply(target)
             val teleport = tp.pos
-            val world = manager.server.levelKeys().find { it.location() == tp.world.rl } ?: throw IllegalStateException("Dimension ${tp.world} not found!")
-            val level = manager.server.getLevel(world) ?: throw IllegalStateException("Dimension ${tp.world} can't be loaded!")
+            val world = manager.server.levelKeys().find { it.location() == tp.world.rl } ?: throw IllegalStateException(
+                "Dimension ${tp.world} not found!"
+            )
+            val level =
+                manager.server.getLevel(world) ?: throw IllegalStateException("Dimension ${tp.world} can't be loaded!")
             this@tpTo().forEach { it.teleportTo(level, teleport.x, teleport.y, teleport.z, tp.vec.x, tp.vec.y) }
         }
     }

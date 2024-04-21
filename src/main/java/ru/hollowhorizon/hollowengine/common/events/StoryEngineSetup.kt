@@ -48,7 +48,7 @@ object StoryEngineSetup {
         forgeBus.addListener(StoryHandler::onWorldSave)
         forgeBus.addListener(StoryHandler::onServerStart)
         forgeBus.addListener(StoryHandler::onScriptError)
-        forgeBus.addListener(StoryHandler::onScriptCompiled)
+        forgeBus.addListener(StoryHandler::onScriptStarted)
         if(isPhysicalClient) forgeBus.register(AimMarkRenderer)
         MOD_BUS.addListener(::onAttributeCreation)
         MOD_BUS.addListener(this::entityRenderers)

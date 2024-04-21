@@ -205,8 +205,8 @@ class ScriptErrorPacket(val script: String, val errors: List<ScriptError>) : Hol
 
 @HollowPacketV2(HollowPacketV2.Direction.TO_CLIENT)
 @Serializable
-class ScriptCompiledPacket(val script: String) : HollowPacketV3<ScriptCompiledPacket> {
-    override fun handle(player: Player, data: ScriptCompiledPacket) {
+class ScriptStartedPacket(val script: String) : HollowPacketV3<ScriptStartedPacket> {
+    override fun handle(player: Player, data: ScriptStartedPacket) {
         if (CodeEditor.currentFile == script) {
             CodeEditor.editor.setErrorMarkers(emptyMap())
             if (Minecraft.getInstance().screen is CodeEditorGui) {

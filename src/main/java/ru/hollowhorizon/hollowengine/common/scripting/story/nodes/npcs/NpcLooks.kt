@@ -37,7 +37,7 @@ class NpcLookToBlockNode(val npc: Safe<NPCEntity>, var pos: () -> Vec3, var spee
 
     override fun tick(): Boolean {
         if (!npc.isLoaded) return true
-        val npc = npc()!!
+        val npc = npc()
 
         val look = npc.lookControl
 

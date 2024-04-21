@@ -37,7 +37,7 @@ import ru.hollowhorizon.hc.client.utils.get
 import ru.hollowhorizon.hc.client.utils.isLogicalClient
 import ru.hollowhorizon.hc.client.utils.mcText
 import ru.hollowhorizon.hc.client.utils.mcTranslate
-import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptCompiledPacket
+import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptStartedPacket
 import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptError
 import ru.hollowhorizon.hollowengine.client.gui.scripting.ScriptErrorPacket
 import ru.hollowhorizon.hollowengine.common.capabilities.StoriesCapability
@@ -47,8 +47,8 @@ import ru.hollowhorizon.hollowengine.common.files.DirectoryManager.fromReadableP
 import ru.hollowhorizon.hollowengine.common.scripting.StoryLogger
 import ru.hollowhorizon.hollowengine.common.scripting.story.StoryStateMachine
 import ru.hollowhorizon.hollowengine.common.scripting.story.runScript
-import ru.hollowhorizon.kotlinscript.common.events.ScriptCompiledEvent
 import ru.hollowhorizon.kotlinscript.common.events.ScriptErrorEvent
+import ru.hollowhorizon.kotlinscript.common.events.ScriptStartedEvent
 import java.util.concurrent.ConcurrentHashMap
 
 object StoryHandler {
@@ -146,11 +146,11 @@ object StoryHandler {
     }
 
     @JvmStatic
-    fun onScriptCompiled(event: ScriptCompiledEvent) {
-        val server = ServerLifecycleHooks.getCurrentServer()
+    fun onScriptStarted(event: ScriptStartedEvent) {
+        val server = ServerLifecycleHooks.getCurrentServer() ?: return
 
         server.playerList.players.forEach { player ->
-            ScriptCompiledPacket(event.file.name).send(player)
+            ScriptStartedPacket(event.file.name).send(player)
         }
     }
 
