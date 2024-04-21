@@ -227,8 +227,9 @@ object CodeEditor {
         if (ImGui.getIO().getKeysDown(ImGui.getIO().getKeyMap(ImGuiKey.Delete))) return
         if (ImGui.getIO().getKeysDown(ImGui.getIO().getKeyMap(ImGuiKey.Backspace))) return
 
-        val chars = setOf('(', '{', '[')
-        val completeChars = arrayOf(')', '}', ']')
+        val chars = setOf('(', '{', '[', '"')
+
+        val completeChars = arrayOf(')', '}', ']', '"')
 
         if (c in chars) {
             editor.insertText(completeChars[chars.indexOf(c)].toString())
@@ -257,7 +258,7 @@ object CodeEditor {
             if (tree.drawArrow) ImGui.openPopup("FolderTreePopup##" + tree.path)
             else ImGui.openPopup("FileTreePopup##" + tree.path)
         }
-        if ((tree.path.startsWith("assets") || tree.path.startsWith("data")) && ImGui.beginDragDropSource()) {
+        if ((tree.path.startsWith("assets") || tree.path.startsWith("data")) && !tree.drawArrow && ImGui.beginDragDropSource()) {
             ImGui.setDragDropPayload("TREE", tree.path, ImGuiCond.Once)
             ImGui.pushItemWidth(350f)
             ImGui.text(tree.path.substringAfter('/').replaceFirst('/', ':'))
