@@ -55,7 +55,7 @@ object CodeEditor {
     val editor = TextEditor().apply {
         setLanguageDefinition(KOTLIN_LANG)
 
-        tabSize = 4
+        tabSize = 2
         text = """
             val npc by NPCEntity.creating {
                 model = "hollowengine:models/model.gltf"
